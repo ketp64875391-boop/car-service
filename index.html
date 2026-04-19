@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="車廠服務">
+<meta name="theme-color" content="#1a1a2e">
+<link rel="manifest" href="manifest.json">
+<title>車廠服務管理</title>
+<style>
+:root{--bg:#f2f2f7;--card:#fff;--card-border:rgba(0,0,0,0.1);--text:#1a1a1a;--text2:#555;--text3:#999;--accent:#1a1a2e;--blue:#185FA5;--green:#1a7a35;--red:#E24B4A;--amber:#854F0B;--radius:14px;--safe-top:env(safe-area-inset-top);--safe-bot:env(safe-area-inset-bottom)}
+@media(prefers-color-scheme:dark){:root{--bg:#1c1c1e;--card:#2c2c2e;--card-border:rgba(255,255,255,0.1);--text:#fff;--text2:#ebebf0;--text3:#8e8e93}}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;background:var(--bg);color:var(--text)}
+#app{height:100%;display:flex;flex-direction:column;max-width:430px;margin:0 auto;position:relative}
+/* Status bar space */
+.sb-space{height:calc(44px + var(--safe-top));background:var(--accent);flex-shrink:0}
+.nav{background:var(--accent);padding:12px 18px 14px;flex-shrink:0}
+.nav h1{color:#fff;font-size:20px;font-weight:600;margin-bottom:2px}
+.nav p{color:rgba(255,255,255,0.55);font-size:13px}
+/* Pages */
+.page{display:none;flex:1;flex-direction:column;overflow:hidden}
+.page.active{display:flex}
+/* Stats */
+.stats{display:flex;gap:8px;padding:10px 14px 4px;flex-shrink:0}
+.stat{flex:1;background:var(--card);border-radius:10px;padding:8px 10px;border:0.5px solid var(--card-border)}
+.stat-n{font-size:20px;font-weight:600;color:var(--text)}
+.stat-l{font-size:11px;color:var(--text3)}
+/* Search */
+.srch{display:flex;align-items:center;gap:8px;background:var(--card);margin:10px 14px 4px;border-radius:10px;padding:8px 12px;border:0.5px solid var(--card-border);flex-shrink:0}
+.srch input{border:none;background:transparent;outline:none;font-size:14px;color:var(--text);flex:1;font-family:inherit}
+.srch input::placeholder{color:var(--text3)}
+/* Scroll */
+.scroll{flex:1;overflow-y:auto;padding:0 14px;padding-bottom:calc(80px + var(--safe-bot));-webkit-overflow-scrolling:touch}
+/* Card */
+.card{background:var(--card);border-radius:var(--radius);border:0.5px solid var(--card-border);padding:13px 14px;margin-bottom:9px;cursor:pointer;transition:opacity .1s}
+.card:active{opacity:.7}
+.card-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.plate{font-size:17px;font-weight:600;color:var(--text);letter-spacing:.5px}
+.badge{font-size:11px;padding:3px 9px;border-radius:9px;font-weight:500}
+.cg{display:grid;grid-template-columns:1fr 1fr;gap:5px 10px}
+.fl{display:flex;flex-direction:column;gap:1px}
+.fl .lbl{font-size:11px;color:var(--text3)}
+.fl .val{font-size:13px;color:var(--text);font-weight:500}
+.note-row{margin-top:7px;font-size:12px;color:var(--text3)}
+.notice-bar{background:#fff8e1;border-radius:9px;padding:7px 10px;margin-top:8px;display:flex;align-items:flex-start;gap:6px}
+.notice-bar span{font-size:12px;color:#854F0B;line-height:1.4;flex:1}
+/* Photo row in card */
+.photo-strip{display:flex;gap:7px;overflow-x:auto;margin-top:9px;padding-bottom:2px}
+.photo-strip::-webkit-scrollbar{display:none}
+.ph-thumb{width:56px;height:56px;border-radius:9px;overflow:hidden;flex-shrink:0;background:var(--bg);border:.5px solid var(--card-border);position:relative}
+.ph-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.ph-thumb .del{position:absolute;top:2px;right:2px;width:17px;height:17px;border-radius:50%;background:rgba(0,0,0,.65);border:none;color:#fff;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1}
+.add-ph{width:56px;height:56px;border-radius:9px;flex-shrink:0;background:var(--bg);border:1.5px dashed var(--card-border);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;font-size:9px;color:var(--text3)}
+.add-ph-wide{height:38px;border-radius:9px;background:var(--bg);border:1.5px dashed var(--card-border);display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;font-size:12px;color:var(--text3);margin-top:8px}
+/* Progress */
+.prog{height:3px;background:var(--card-border);border-radius:2px;margin-top:8px}
+.prog-fill{height:100%;border-radius:2px}
+/* FAB */
+.fab{position:absolute;bottom:calc(66px + var(--safe-bot));right:18px;width:52px;height:52px;background:var(--accent);border-radius:50%;border:none;color:#fff;font-size:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:10;box-shadow:0 2px 12px rgba(0,0,0,.25)}
+/* Tab bar */
+.tabbar{background:var(--card);border-top:.5px solid var(--card-border);display:flex;padding:8px 0;padding-bottom:calc(8px + var(--safe-bot));flex-shrink:0}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer}
+.tab-ic{font-size:20px;line-height:1}
+.tab-lb{font-size:9px;color:var(--text3)}
+.tab.on .tab-lb{color:var(--accent);font-weight:600}
+.bcnt{background:var(--red);color:#fff;font-size:9px;font-weight:600;border-radius:7px;padding:1px 5px;margin-left:2px}
+/* Overlay / Sheet */
+.overlay{position:absolute;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;z-index:20}
+.sheet{background:var(--card);border-radius:20px 20px 0 0;padding:20px 18px;padding-bottom:calc(24px + var(--safe-bot));width:100%;max-height:93%;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.sheet h2{font-size:17px;font-weight:600;color:var(--text);margin-bottom:3px}
+.sh-sub{font-size:13px;color:var(--text3);margin-bottom:16px}
+/* Form */
+.field{margin-bottom:11px}
+.field label{font-size:12px;color:var(--text3);display:block;margin-bottom:4px}
+.field input,.field select,.field textarea{width:100%;border:.5px solid var(--card-border);border-radius:9px;padding:10px 12px;font-size:14px;color:var(--text);background:var(--bg);font-family:inherit;outline:none;-webkit-appearance:none}
+.field textarea{resize:none;height:68px;line-height:1.5}
+.r2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:4px}
+.chip{padding:7px 13px;border-radius:20px;font-size:13px;border:.5px solid var(--card-border);cursor:pointer;background:var(--card);color:var(--text2)}
+.chip.sel{background:var(--accent);color:#fff;border-color:var(--accent)}
+.ci-row{display:flex;gap:8px;margin-top:8px;align-items:center}
+.ci-row input{flex:1;border:.5px solid var(--card-border);border-radius:9px;padding:9px 11px;font-size:13px;background:var(--bg);font-family:inherit;outline:none;color:var(--text)}
+.ci-btn{padding:9px 14px;border-radius:9px;border:.5px solid var(--card-border);background:var(--card);font-size:13px;cursor:pointer;font-family:inherit;color:var(--text2)}
+/* Buttons */
+.brow{display:flex;gap:8px;margin-top:12px}
+.bb{flex:1;padding:12px;border-radius:11px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+.bb-cancel{border:.5px solid var(--card-border);background:transparent;color:var(--text2)}
+.bb-save{border:none;background:var(--blue);color:#fff}
+.bb-done{border:none;background:var(--green);color:#fff}
+.bb-del{border:none;background:var(--red);color:#fff}
+.bb-red{border:1px solid var(--red);background:transparent;color:var(--red)}
+.bb-dark{border:none;background:var(--accent);color:#fff}
+.bb-scan{border:none;background:var(--accent);color:#fff}
+/* Alert boxes */
+.warn-box{background:#fce8e8;border-radius:10px;padding:10px 12px;margin-bottom:14px}
+.warn-box p{font-size:12px;color:#791F1F;line-height:1.5}
+.dup-box{background:#fff3e0;border-radius:10px;padding:10px 12px;margin-bottom:12px;display:none}
+.dup-box p{font-size:12px;color:#854F0B;line-height:1.5;margin-bottom:8px}
+.dup-brow{display:flex;gap:8px}
+.dup-brow button{flex:1;padding:9px;border-radius:9px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit}
+.dup-no{border:.5px solid var(--card-border);background:transparent;color:var(--text2)}
+.dup-yes{border:none;background:#854F0B;color:#fff}
+.autofill-hint{background:#e3f2fd;border-radius:9px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:#0C447C;display:none}
+.plate-hint{font-size:11px;color:var(--blue);margin-top:3px;display:none}
+/* Notice section */
+.notice-sec{background:#fff8e1;border-radius:10px;padding:10px 12px;margin-bottom:12px;display:none}
+.notice-sec .ns-lb{font-size:11px;color:#854F0B;font-weight:500;margin-bottom:4px}
+.notice-sec .ns-tx{font-size:13px;color:#633806;line-height:1.4}
+/* AI scan */
+.scan-choice{display:flex;flex-direction:column;gap:12px;margin-bottom:4px}
+.scan-opt{display:flex;align-items:center;gap:14px;background:var(--bg);border:.5px solid var(--card-border);border-radius:14px;padding:14px 16px;cursor:pointer}
+.scan-opt:active{opacity:.7}
+.scan-opt-ic{font-size:28px;flex-shrink:0}
+.scan-opt-tx h3{font-size:14px;font-weight:600;color:var(--text);margin-bottom:2px}
+.scan-opt-tx p{font-size:12px;color:var(--text2)}
+.scan-prev{width:100%;border-radius:12px;overflow:hidden;background:#000;margin-bottom:12px;min-height:140px;display:flex;align-items:center;justify-content:center}
+.scan-prev img{width:100%;border-radius:12px;display:block}
+.scan-ph{color:rgba(255,255,255,.4);font-size:13px;text-align:center;padding:36px 20px}
+.ai-st{border-radius:10px;padding:10px 14px;margin-bottom:12px;display:none;font-size:13px;line-height:1.5}
+.ai-st.loading{background:#e3f2fd;color:#0C447C}
+.ai-st.done{background:#e3f9ea;color:#1a7a35}
+.ai-st.err{background:#fce8e8;color:#a32d2d}
+.ai-badge{display:inline-block;background:#e3f2fd;color:#0C447C;font-size:10px;padding:1px 7px;border-radius:6px;margin-left:5px;font-weight:500}
+/* Photo edit grid */
+.ph-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.ph-lg{width:82px;height:82px;border-radius:10px;overflow:hidden;position:relative;background:var(--bg);border:.5px solid var(--card-border);cursor:pointer}
+.ph-lg img{width:100%;height:100%;object-fit:cover;display:block}
+.ph-lg .del{position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,.65);border:none;color:#fff;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.add-ph-lg{width:82px;height:82px;border-radius:10px;background:var(--bg);border:1.5px dashed var(--card-border);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;font-size:10px;color:var(--text3)}
+/* Lightbox */
+.lightbox{position:absolute;inset:0;background:rgba(0,0,0,.94);z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;padding-top:calc(44px + var(--safe-top))}
+.lb-close{position:absolute;top:calc(16px + var(--safe-top));right:18px;background:rgba(255,255,255,.15);border:none;color:#fff;width:36px;height:36px;border-radius:50%;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.lb-img{max-width:100%;max-height:75vh;border-radius:8px;object-fit:contain}
+.lb-del{margin-top:20px;background:var(--red);border:none;color:#fff;padding:11px 32px;border-radius:11px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+/* Misc */
+.sec-lb{font-size:11px;color:var(--text3);font-weight:500;letter-spacing:.5px;text-transform:uppercase;padding:10px 0 5px}
+.divider{height:.5px;background:var(--card-border);margin:4px 0}
+.empty{text-align:center;padding:48px 20px;color:var(--text3);font-size:14px;line-height:1.7}
+.todo-card{background:var(--card);border-radius:var(--radius);border:.5px solid var(--card-border);padding:12px 14px;margin-bottom:8px;display:flex;gap:11px}
+.todo-card.urg{border-left:3px solid var(--red);border-radius:0 var(--radius) var(--radius) 0}
+.todo-card.dnc{opacity:.45}
+.chk{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--card-border);flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.chk.on{background:#4cd964;border-color:#4cd964}
+.chk-in{width:10px;height:7px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg) translateY(-1px);opacity:0}
+.chk.on .chk-in{opacity:1}
+.tb{flex:1;min-width:0}
+.tt{display:flex;align-items:center;gap:6px;margin-bottom:3px;flex-wrap:wrap}
+.fp{flex-shrink:0;padding:5px 13px;border-radius:20px;font-size:12px;font-weight:500;border:.5px solid var(--card-border);cursor:pointer;background:var(--card);color:var(--text2)}
+.fp.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.filter-row{display:flex;gap:7px;padding:8px 14px 2px;overflow-x:auto;flex-shrink:0}
+.filter-row::-webkit-scrollbar{display:none}
+.avatar{width:40px;height:40px;border-radius:50%;background:#e3f2fd;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;color:#0C447C;flex-shrink:0}
+.toggle{width:44px;height:26px;border-radius:13px;background:var(--card-border);position:relative;cursor:pointer;border:none;flex-shrink:0}
+.toggle.on{background:var(--red)}
+.toggle-kn{width:20px;height:20px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:left .15s}
+.toggle.on .toggle-kn{left:21px}
+.hist-card{background:var(--card);border-radius:var(--radius);border:.5px solid var(--card-border);padding:13px 14px;margin-bottom:9px;cursor:pointer}
+.hist-card:active{opacity:.7}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="sb-space"></div>
+
+  <!-- 車輛清單 -->
+  <div class="page active" id="pg-cars">
+    <div class="nav"><h1>廠內車輛</h1><p id="car-date"></p></div>
+    <div class="stats">
+      <div class="stat"><div class="stat-n" id="s-all">0</div><div class="stat-l">全部</div></div>
+      <div class="stat"><div class="stat-n" style="color:#1a7a35" id="s-rep">0</div><div class="stat-l">維修中</div></div>
+      <div class="stat"><div class="stat-n" style="color:#b35a00" id="s-wait">0</div><div class="stat-l">待料</div></div>
+      <div class="stat"><div class="stat-n" style="color:#0d5ea6" id="s-done">0</div><div class="stat-l">完工</div></div>
+    </div>
+    <div class="srch"><span style="font-size:15px;color:var(--text3)">⌕</span><input id="srch-car" placeholder="搜尋車牌、客戶或工單…" oninput="renderCars()"></div>
+    <div class="scroll" id="car-list"></div>
+  </div>
+
+  <!-- 待辦事項 -->
+  <div class="page" id="pg-todo">
+    <div class="nav"><h1>待辦事項</h1><p>今日需要跟進的項目</p></div>
+    <div class="stats">
+      <div class="stat"><div class="stat-n" id="t-all">0</div><div class="stat-l">全部待辦</div></div>
+      <div class="stat"><div class="stat-n" style="color:#a32d2d" id="t-urg">0</div><div class="stat-l">緊急</div></div>
+      <div class="stat"><div class="stat-n" style="color:#1a7a35" id="t-fin">0</div><div class="stat-l">已完成</div></div>
+    </div>
+    <div class="filter-row" id="todo-filters"></div>
+    <div class="scroll" id="todo-list"></div>
+  </div>
+
+  <!-- 客戶 -->
+  <div class="page" id="pg-client">
+    <div class="nav"><h1>客戶紀錄</h1><p id="client-lbl">最近進廠客戶</p></div>
+    <div class="srch"><span style="font-size:15px;color:var(--text3)">⌕</span><input id="srch-client" placeholder="搜尋車牌、姓名或電話…" oninput="renderClients()"></div>
+    <div class="scroll" id="client-list"></div>
+  </div>
+
+  <!-- 維修車歷 -->
+  <div class="page" id="pg-hist">
+    <div class="nav"><h1>維修車歷</h1><p>已完成交車的紀錄</p></div>
+    <div class="srch"><span style="font-size:15px;color:var(--text3)">⌕</span><input id="srch-hist" placeholder="搜尋車牌、客戶或工單…" oninput="renderHist()"></div>
+    <div class="scroll" id="hist-list"></div>
+  </div>
+
+  <!-- 新增：選擇方式 -->
+  <div class="overlay" id="ov-choice" style="display:none">
+    <div class="sheet">
+      <h2>新增車輛</h2><div class="sh-sub">選擇建立方式</div>
+      <div class="scan-choice">
+        <div class="scan-opt" onclick="openScan()">
+          <div class="scan-opt-ic">📋</div>
+          <div class="scan-opt-tx"><h3>掃描接車單</h3><p>拍照後 AI 自動辨識車牌、姓名、電話</p></div>
+        </div>
+        <div class="scan-opt" onclick="openManual()">
+          <div class="scan-opt-ic">✏️</div>
+          <div class="scan-opt-tx"><h3>手動輸入</h3><p>自行填寫各欄位資料</p></div>
+        </div>
+      </div>
+      <div class="brow"><button class="bb bb-cancel" onclick="hov('ov-choice')">取消</button></div>
+    </div>
+  </div>
+
+  <!-- 掃描接車單 -->
+  <div class="overlay" id="ov-scan" style="display:none">
+    <div class="sheet">
+      <h2>掃描接車單</h2><div class="sh-sub">拍攝手寫或印刷接車單</div>
+      <div class="scan-prev" id="scan-prev"><div class="scan-ph" id="scan-ph">尚未拍照，點下方按鈕開始</div><img id="scan-img" src="" alt="" style="display:none"></div>
+      <div class="ai-st" id="ai-st"></div>
+      <div class="brow" style="margin-bottom:12px">
+        <button class="bb bb-cancel" onclick="hov('ov-scan')">取消</button>
+        <button class="bb bb-scan" onclick="document.getElementById('inp-scan').click()">📷 拍攝接車單</button>
+      </div>
+      <div id="scan-result" style="display:none">
+        <div style="font-size:12px;color:var(--text3);margin-bottom:8px">AI 辨識結果，請確認後儲存：</div>
+        <div class="dup-box" id="scan-dup"><p id="scan-dup-msg"></p><div class="dup-brow"><button class="dup-no" onclick="hideScanDup()">返回修改</button><button class="dup-yes" onclick="forceScan()">確認仍要新增</button></div></div>
+        <div class="r2">
+          <div class="field"><label>車牌號碼 <span class="ai-badge" id="b-plate" style="display:none">AI</span></label><input id="sr-plate" placeholder="—" oninput="srPlateHint()"><div class="plate-hint" id="sr-ph"></div></div>
+          <div class="field"><label>進廠日期</label><input id="sr-date" type="date"></div>
+        </div>
+        <div class="r2">
+          <div class="field"><label>客戶姓名 <span class="ai-badge" id="b-name" style="display:none">AI</span></label><input id="sr-name" placeholder="—"></div>
+          <div class="field"><label>聯絡電話 <span class="ai-badge" id="b-phone" style="display:none">AI</span></label><input id="sr-phone" placeholder="—"></div>
+        </div>
+        <div class="r2">
+          <div class="field"><label>工單號碼 <span class="ai-badge" id="b-wo" style="display:none">AI</span></label><input id="sr-wo" placeholder="自動產生"></div>
+          <div class="field"><label>車型 <span class="ai-badge" id="b-model" style="display:none">AI</span></label><input id="sr-model" placeholder="—"></div>
+        </div>
+        <div class="r2">
+          <div class="field"><label>預計交車日期</label><input id="sr-deldate" type="date"></div>
+          <div class="field"><label>預計交車時間</label><input id="sr-time" type="time"></div>
+        </div>
+        <div class="field"><label>狀態</label><div class="chips" id="chips-scan"></div><div class="ci-row" id="ci-scan" style="display:none"><input id="sr-custom" placeholder="自訂狀態…"><button class="ci-btn" onclick="confirmScanCustom()">確認</button></div></div>
+        <div class="field"><label>備註 <span class="ai-badge" id="b-note" style="display:none">AI</span></label><input id="sr-note" placeholder="選填"></div>
+        <div class="brow">
+          <button class="bb bb-cancel" onclick="resetScan()">重新拍照</button>
+          <button class="bb bb-save" onclick="saveScan()">確認儲存</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 手動新增 -->
+  <div class="overlay" id="ov-manual" style="display:none">
+    <div class="sheet">
+      <h2>新增車輛</h2><div class="sh-sub">手動填寫資料</div>
+      <div class="autofill-hint" id="af-hint">已找到此車牌客戶資料，自動帶入姓名與電話。</div>
+      <div class="notice-sec" id="m-notice-sec"><div class="ns-lb">⚠ 客戶注意事項</div><div class="ns-tx" id="m-notice-tx"></div></div>
+      <div class="dup-box" id="m-dup"><p id="m-dup-msg"></p><div class="dup-brow"><button class="dup-no" onclick="hideManualDup()">返回修改</button><button class="dup-yes" onclick="forceManual()">確認仍要新增</button></div></div>
+      <div class="r2">
+        <div class="field"><label>車牌號碼 *</label><input id="m-plate" placeholder="ABC-1234" oninput="mPlateIn()"><div class="plate-hint" id="m-ph"></div></div>
+        <div class="field"><label>進廠日期</label><input id="m-date" type="date"></div>
+      </div>
+      <div class="r2">
+        <div class="field"><label>預計交車日期</label><input id="m-deldate" type="date"></div>
+        <div class="field"><label>預計交車時間</label><input id="m-time" type="time"></div>
+      </div>
+      <div class="r2">
+        <div class="field"><label>客戶姓名 *</label><input id="m-name" placeholder="陳大明"></div>
+        <div class="field"><label>聯絡電話</label><input id="m-phone" placeholder="0912-345-678"></div>
+      </div>
+      <div class="r2">
+        <div class="field"><label>工單號碼</label><input id="m-wo" placeholder="WO-001"></div>
+        <div class="field"><label>車型</label><input id="m-model" placeholder="Toyota Camry"></div>
+      </div>
+      <div class="field"><label>狀態 *</label><div class="chips" id="chips-manual"></div><div class="ci-row" id="ci-manual" style="display:none"><input id="m-custom" placeholder="自訂狀態…"><button class="ci-btn" onclick="confirmManualCustom()">確認</button></div></div>
+      <div class="field"><label>備註</label><input id="m-note" placeholder="選填"></div>
+      <div class="brow">
+        <button class="bb bb-cancel" onclick="hov('ov-manual')">取消</button>
+        <button class="bb bb-save" onclick="saveManual()">儲存新增</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 編輯車輛 -->
+  <div class="overlay" id="ov-edit" style="display:none">
+    <div class="sheet">
+      <h2 id="ed-title"></h2><div class="sh-sub" id="ed-sub"></div>
+      <div class="notice-sec" id="ed-notice-sec">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <div class="ns-lb" style="margin-bottom:0">⚠ 客戶注意事項</div>
+          <button onclick="toggleNoticeEdit()" style="background:transparent;border:.5px solid #854F0B;color:#854F0B;border-radius:7px;padding:2px 8px;font-size:11px;cursor:pointer;font-family:inherit" id="ed-notice-btn">編輯</button>
+        </div>
+        <div class="ns-tx" id="ed-notice-tx"></div>
+        <textarea id="ed-notice-in" placeholder="輸入注意事項…" style="display:none;width:100%;border:.5px solid #854F0B;border-radius:9px;padding:8px 10px;font-size:13px;color:#633806;background:#fffbf0;font-family:inherit;outline:none;resize:none;height:60px;margin-top:6px"></textarea>
+        <button id="ed-notice-save" onclick="saveNotice()" style="display:none;margin-top:6px;padding:7px 14px;border:none;border-radius:8px;background:#854F0B;color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">儲存注意事項</button>
+      </div>
+      <!-- 照片區 -->
+      <div class="field">
+        <label>📷 進廠照片 <span id="ed-ph-count" style="color:var(--text3);font-weight:400"></span></label>
+        <div class="ph-grid" id="ed-ph-grid"></div>
+      </div>
+      <div class="r2">
+        <div class="field"><label>進廠日期</label><input id="ed-date" type="date"></div>
+        <div class="field"><label>工單號碼</label><input id="ed-wo"></div>
+      </div>
+      <div class="r2">
+        <div class="field"><label>預計交車日期</label><input id="ed-deldate" type="date"></div>
+        <div class="field"><label>預計交車時間</label><input id="ed-time" type="time"></div>
+      </div>
+      <div class="r2">
+        <div class="field"><label>客戶姓名</label><input id="ed-name"></div>
+        <div class="field"><label>聯絡電話</label><input id="ed-phone"></div>
+      </div>
+      <div class="field"><label>車型</label><input id="ed-model"></div>
+      <div class="field"><label>狀態</label><div class="chips" id="chips-edit"></div><div class="ci-row" id="ci-edit" style="display:none"><input id="ed-custom" placeholder="自訂狀態…"><button class="ci-btn" onclick="confirmEditCustom()">確認</button></div></div>
+      <div class="field"><label>備註</label><input id="ed-note"></div>
+      <div class="brow" style="margin-bottom:8px">
+        <button class="bb bb-cancel" onclick="hov('ov-edit')">關閉</button>
+        <button class="bb bb-save" onclick="saveEdit()">儲存修改</button>
+      </div>
+      <div class="brow">
+        <button class="bb bb-red" onclick="showCf('cancel')">取消此車輛</button>
+        <button class="bb bb-dark" onclick="showCf('done')">已完成交車</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 確認 -->
+  <div class="overlay" id="ov-cf" style="display:none">
+    <div class="sheet">
+      <h2 id="cf-title"></h2><div class="sh-sub" id="cf-desc" style="margin-bottom:14px"></div>
+      <div class="warn-box" id="cf-warn" style="display:none"><p id="cf-warn-tx"></p></div>
+      <div class="brow">
+        <button class="bb bb-cancel" onclick="hov('ov-cf')">返回</button>
+        <button class="bb" id="cf-btn" onclick="doCf()">確認</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 新增待辦 -->
+  <div class="overlay" id="ov-todo-add" style="display:none">
+    <div class="sheet">
+      <h2>新增待辦事項</h2>
+      <div class="r2">
+        <div class="field"><label>車牌號碼 *</label><input id="ta-plate" placeholder="ABC-1234"></div>
+        <div class="field"><label>客戶姓名</label><input id="ta-name"></div>
+      </div>
+      <div class="field"><label>類型 *</label><div class="chips" id="chips-todo"></div><div class="ci-row" id="ci-todo" style="display:none"><input id="ta-custom" placeholder="自訂類型…"><button class="ci-btn" onclick="confirmTodoCustom()">確認</button></div></div>
+      <div class="field"><label>說明內容</label><textarea id="ta-desc" placeholder="描述這筆待辦的詳細內容…"></textarea></div>
+      <div class="field"><label>備註時間或說明</label><input id="ta-meta" placeholder="例：等待 2小時…"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0 4px">
+        <span style="font-size:13px;color:var(--text2)">標記為緊急</span>
+        <button class="toggle" id="urg-toggle" onclick="toggleUrg()"><div class="toggle-kn"></div></button>
+      </div>
+      <div class="brow">
+        <button class="bb bb-cancel" onclick="hov('ov-todo-add')">取消</button>
+        <button class="bb bb-save" onclick="saveTodo()">儲存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 客戶詳細 -->
+  <div class="overlay" id="ov-client" style="display:none">
+    <div class="sheet">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+        <div class="avatar" id="cl-av">?</div>
+        <div style="flex:1"><div style="font-size:18px;font-weight:600;color:var(--text)" id="cl-name"></div><div style="font-size:13px;color:var(--text2)" id="cl-phone"></div></div>
+        <button style="padding:8px 14px;border:none;border-radius:9px;background:var(--accent);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit" onclick="openEditClient()">編輯</button>
+      </div>
+      <div class="field"><label>車牌號碼</label><div id="cl-plates" style="font-size:14px;font-weight:600;color:var(--text);padding:4px 0"></div></div>
+      <div class="field"><label>注意事項</label><div id="cl-notice" style="font-size:13px;color:var(--text2);line-height:1.5;padding:4px 0"></div></div>
+      <div class="field"><label>客戶備註</label><div id="cl-memo" style="font-size:13px;color:var(--text2);line-height:1.5;padding:4px 0"></div></div>
+      <div class="field"><label>進廠紀錄</label><div id="cl-visits"></div></div>
+      <div class="brow"><button class="bb bb-cancel" onclick="hov('ov-client')">關閉</button></div>
+    </div>
+  </div>
+
+  <!-- 編輯客戶 -->
+  <div class="overlay" id="ov-edit-client" style="display:none">
+    <div class="sheet">
+      <h2>編輯客戶資料</h2><div class="sh-sub" id="ec-sub"></div>
+      <div class="r2">
+        <div class="field"><label>客戶姓名</label><input id="ec-name"></div>
+        <div class="field"><label>聯絡電話</label><input id="ec-phone"></div>
+      </div>
+      <div class="field"><label>注意事項</label><textarea id="ec-notice" placeholder="例：慣用現金、對噴漆敏感…"></textarea></div>
+      <div class="field"><label>客戶備註</label><textarea id="ec-memo" placeholder="其他備忘事項…"></textarea></div>
+      <div class="brow">
+        <button class="bb bb-cancel" onclick="hov('ov-edit-client')">取消</button>
+        <button class="bb bb-save" onclick="saveClient()">儲存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 燈箱 -->
+  <div class="lightbox" id="lightbox" style="display:none">
+    <button class="lb-close" onclick="closeLb()">✕</button>
+    <img class="lb-img" id="lb-img" src="" alt="">
+    <button class="lb-del" onclick="delFromLb()">移除這張照片</button>
+  </div>
+
+  <!-- 維修車歷詳細 -->
+  <div class="overlay" id="ov-hist" style="display:none">
+    <div class="sheet">
+      <h2 id="hd-plate"></h2><div class="sh-sub" id="hd-sub"></div>
+      <div class="field"><label>📷 照片 <span id="hd-ph-count" style="color:var(--text3);font-weight:400"></span></label><div class="ph-grid" id="hd-ph-grid"></div></div>
+      <div class="cg" id="hd-info" style="margin-bottom:12px"></div>
+      <div class="brow"><button class="bb bb-cancel" onclick="hov('ov-hist')">關閉</button></div>
+    </div>
+  </div>
+
+  <input type="file" id="inp-scan" accept="image/*" capture="environment" style="display:none" onchange="handleScan(event)">
+  <input type="file" id="inp-photo" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(event)">
+  <input type="file" id="inp-photo-hist" accept="image/*" capture="environment" style="display:none" onchange="handlePhotoHist(event)">
+
+  <button class="fab" id="fab" onclick="fabAct()">＋</button>
+
+  <div class="tabbar">
+    <div class="tab on" onclick="goto('cars',this)"><div class="tab-ic">🚗</div><div class="tab-lb">車輛清單</div></div>
+    <div class="tab" onclick="goto('todo',this)"><div class="tab-ic">✅</div><div class="tab-lb">待辦 <span class="bcnt" id="todo-cnt">0</span></div></div>
+    <div class="tab" onclick="goto('client',this)"><div class="tab-ic">📞</div><div class="tab-lb">客戶</div></div>
+    <div class="tab" onclick="goto('hist',this)"><div class="tab-ic">📋</div><div class="tab-lb">維修車歷</div></div>
+  </div>
+</div>
+
+<script>
+// ── 車牌格式化 ──
+function normPlate(r){
+  var s=r.toUpperCase().replace(/-/g,'').trim();if(!s)return '';
+  var res='',prev='';
+  for(var i=0;i<s.length;i++){var c=s[i],ia=/[A-Z]/.test(c),pa=/[A-Z]/.test(prev);if(i>0&&prev!==''&&ia!==pa)res+='-';res+=c;prev=c;}
+  return res;
+}
+function getPlate(id){return normPlate(document.getElementById(id).value);}
+function plateHint(inputId,hintId){
+  var raw=document.getElementById(inputId).value,fmt=normPlate(raw),h=document.getElementById(hintId);
+  h.style.display=(fmt&&fmt!==raw.toUpperCase())?'block':'none';
+  if(fmt&&fmt!==raw.toUpperCase())h.textContent='將儲存為：'+fmt;
+}
+
+// ── 狀態樣式 ──
+var SS={'保養':{bg:'#e3f9ea',c:'#1a7a35',p:50,b:'#4cd964'},'待料':{bg:'#fff3e0',c:'#854F0B',p:25,b:'#ff9500'},'回電':{bg:'#e3f2fd',c:'#0C447C',p:20,b:'#5ac8fa'},'保固':{bg:'#f3e8ff',c:'#6b2fa0',p:30,b:'#a78bfa'},'追加':{bg:'#fce8e8',c:'#791F1F',p:40,b:'#E24B4A'},'其他':{bg:'#F1EFE8',c:'#444441',p:15,b:'#888'},'維修中':{bg:'#e3f9ea',c:'#1a7a35',p:55,b:'#4cd964'},'完工待領':{bg:'#e3f2fd',c:'#0d5ea6',p:100,b:'#5ac8fa'},'已離場':{bg:'#fce8e8',c:'#a32d2d',p:10,b:'#E24B4A'},'QC':{bg:'#e3f9ea',c:'#1a7a35',p:80,b:'#4cd964'}};
+function gSt(s){return SS[s]||{bg:'#F1EFE8',c:'#444441',p:20,b:'#888'};}
+function bSt(s){var st=gSt(s);return 'background:'+st.bg+';color:'+st.c;}
+var PRESETS=['保養','待料','回電','保固','追加','其他'];
+var TODO_TYPES=['待料','回電','保固','追加','已離場','QC','其他'];
+
+// ── 狀態 ──
+var curPage='cars',editSt='保養',scanSt='保養',manualSt='保養',todoType='待料';
+var urgOn=false,editId=null,cfAction=null,pForceManual=false,pForceScan=false,noticeEditMode=false;
+var photoCarId=null,photoHistId=null,lbCtx=null,lbRef=null;
+var editingClientPlate=null,hdId=null,todoFilter='全部';
+var nid=10;
+
+// ── 資料（LocalStorage 持久化）──
+function load(key,def){try{var v=localStorage.getItem(key);return v?JSON.parse(v):def;}catch(e){return def;}}
+function save(key,val){try{localStorage.setItem(key,JSON.stringify(val));}catch(e){}}
+
+var cars=load('cars',[]);
+var todos=load('todos',[]);
+var clients=load('clients',{});
+var histList=load('hist',[]);
+
+function saveCars(){save('cars',cars);}
+function saveTodos(){save('todos',todos);}
+function saveClients(){save('clients',clients);}
+function saveHist(){save('hist',histList);}
+
+// ── 日期 ──
+function todayStr(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);}
+function fmtDate(s){if(!s)return '—';var p=s.split('-');return p[0]+'/'+p[1]+'/'+p[2];}
+function nowStr(){var d=new Date();return d.getFullYear()+'/'+(d.getMonth()+1)+'/'+d.getDate()+' '+d.getHours()+':'+('0'+d.getMinutes()).slice(-2);}
+function today(){var d=new Date();return d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日';}
+document.getElementById('car-date').textContent='今日 — '+today();
+
+// ── 客戶 helpers ──
+function getClient(plate){return clients[normPlate(plate)]||null;}
+function upsertClient(plate,name,phone){
+  var k=normPlate(plate);if(!k)return;
+  if(!clients[k])clients[k]={plate:k,name:name||'',phone:phone||'',notice:'',memo:''};
+  else{if(name)clients[k].name=name;if(phone)clients[k].phone=phone;}
+  saveClients();
+}
+
+// ── Overlay ──
+function hov(id){document.getElementById(id).style.display='none';}
+function sov(id){document.getElementById(id).style.display='flex';}
+
+// ── Chips ──
+function buildChips(wid,sel,onSel,ciId){
+  var items=(wid==='chips-todo')?TODO_TYPES:PRESETS;
+  var w=document.getElementById(wid),html='';
+  items.forEach(function(s){html+='<div class="chip'+(s===sel?' sel':'')+'" data-val="'+s+'">'+s+'</div>';});
+  html+='<div class="chip'+('__c'===sel?' sel':'')+'" data-val="__c">自行輸入…</div>';
+  w.innerHTML=html;
+  w.querySelectorAll('.chip').forEach(function(c){
+    c.addEventListener('click',function(){
+      var v=c.getAttribute('data-val');onSel(v);
+      w.querySelectorAll('.chip').forEach(function(x){x.classList.remove('sel');});
+      c.classList.add('sel');
+      document.getElementById(ciId).style.display=v==='__c'?'flex':'none';
+    });
+  });
+  document.getElementById(ciId).style.display=sel==='__c'?'flex':'none';
+}
+
+// ── FAB / Page ──
+function fabAct(){if(curPage==='cars')sov('ov-choice');else if(curPage==='todo')openTodoAdd();}
+function goto(pg,el){
+  curPage=pg;
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('on');});
+  document.getElementById('pg-'+pg).classList.add('active');el.classList.add('on');
+  document.getElementById('fab').style.display=(pg==='cars'||pg==='todo')?'flex':'none';
+  if(pg==='todo')renderTodos();if(pg==='client')renderClients();if(pg==='hist')renderHist();
+}
+
+// ── 掃描接車單 ──
+function openScan(){
+  hov('ov-choice');
+  document.getElementById('scan-result').style.display='none';
+  document.getElementById('scan-ph').style.display='block';
+  document.getElementById('scan-img').style.display='none';
+  document.getElementById('ai-st').style.display='none';
+  document.getElementById('scan-dup').style.display='none';
+  pForceScan=false;
+  sov('ov-scan');
+}
+function resetScan(){document.getElementById('scan-result').style.display='none';document.getElementById('scan-img').style.display='none';document.getElementById('scan-ph').style.display='block';document.getElementById('ai-st').style.display='none';pForceScan=false;}
+function hideScanDup(){document.getElementById('scan-dup').style.display='none';pForceScan=false;}
+function handleScan(e){
+  var file=e.target.files[0];if(!file)return;
+  var r=new FileReader();
+  r.onload=function(ev){
+    var url=ev.target.result;
+    document.getElementById('scan-img').src=url;
+    document.getElementById('scan-img').style.display='block';
+    document.getElementById('scan-ph').style.display='none';
+    e.target.value='';
+    runOCR(url);
+  };
+  r.readAsDataURL(file);
+}
+async function runOCR(dataUrl){
+  var st=document.getElementById('ai-st');
+  st.className='ai-st loading';st.style.display='block';st.textContent='🔍 AI 辨識中，請稍候…';
+  document.getElementById('scan-result').style.display='none';
+  try{
+    var b64=dataUrl.split(',')[1];
+    var res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',max_tokens:1000,
+        messages:[{role:'user',content:[
+          {type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},
+          {type:'text',text:'這是汽車服務廠的接車單（可能手寫或印刷）。請辨識以下欄位，只回傳JSON不要其他文字：\n{"plate":"車牌","name":"客戶姓名","phone":"電話","wo":"工單號碼","model":"車型","note":"備註維修項目"}\n看不到的欄位填""。車牌只保留字母數字。'}
+        ]}]
+      })
+    });
+    var data=await res.json();
+    var txt=(data.content&&data.content[0])?data.content[0].text:'';
+    var parsed=JSON.parse(txt.replace(/```json|```/g,'').trim());
+    var plate=normPlate(parsed.plate||'');
+    document.getElementById('sr-plate').value=plate;
+    document.getElementById('sr-name').value=parsed.name||'';
+    document.getElementById('sr-phone').value=parsed.phone||'';
+    document.getElementById('sr-wo').value=parsed.wo||'';
+    document.getElementById('sr-model').value=parsed.model||'';
+    document.getElementById('sr-note').value=parsed.note||'';
+    document.getElementById('sr-date').value=todayStr();
+    document.getElementById('sr-deldate').value=todayStr();
+    document.getElementById('sr-time').value='';
+    ['plate','name','phone','wo','model','note'].forEach(function(f){
+      var b=document.getElementById('b-'+f);if(b)b.style.display=parsed[f]?'inline-block':'none';
+    });
+    scanSt='保養';buildChips('chips-scan',scanSt,function(v){scanSt=v;},'ci-scan');
+    var found=[plate,parsed.name,parsed.phone].filter(Boolean).length;
+    st.className='ai-st done';st.textContent='✅ 辨識完成，找到 '+found+' 個主要欄位，請確認後儲存。';
+    document.getElementById('scan-result').style.display='block';
+    document.getElementById('sr-ph').style.display='none';
+  }catch(err){
+    st.className='ai-st err';st.textContent='⚠️ 辨識失敗，請手動填寫或重新拍照。';
+    ['sr-plate','sr-name','sr-phone','sr-wo','sr-model','sr-note'].forEach(function(id){document.getElementById(id).value='';});
+    document.getElementById('sr-date').value=todayStr();document.getElementById('sr-deldate').value=todayStr();document.getElementById('sr-time').value='';
+    ['plate','name','phone','wo','model','note'].forEach(function(f){var b=document.getElementById('b-'+f);if(b)b.style.display='none';});
+    scanSt='保養';buildChips('chips-scan',scanSt,function(v){scanSt=v;},'ci-scan');
+    document.getElementById('scan-result').style.display='block';
+  }
+}
+function srPlateHint(){plateHint('sr-plate','sr-ph');}
+function confirmScanCustom(){var v=document.getElementById('sr-custom').value.trim();if(!v)return;scanSt=v;buildChips('chips-scan',scanSt,function(val){scanSt=val;},'ci-scan');}
+function findDup(plate){return cars.find(function(c){return c.plate===normPlate(plate);});}
+function saveScan(){
+  var plate=getPlate('sr-plate'),name=document.getElementById('sr-name').value.trim();
+  var status=scanSt==='__c'?document.getElementById('sr-custom').value.trim():scanSt;
+  if(!plate){alert('請填寫車牌號碼');return;}if(!name){alert('請填寫客戶姓名');return;}
+  var dup=findDup(plate);
+  if(dup&&!pForceScan){document.getElementById('scan-dup-msg').textContent='車牌「'+plate+'」目前已有進行中的紀錄（'+dup.name+'，'+dup.status+'），是否仍要新增一筆？';document.getElementById('scan-dup').style.display='block';pForceScan=true;return;}
+  var phone=document.getElementById('sr-phone').value.trim();
+  var wo=document.getElementById('sr-wo').value.trim()||('WO-'+('00'+nid).slice(-3));
+  cars.push({id:nid++,plate:plate,name:name,phone:phone,wo:wo,indate:document.getElementById('sr-date').value,deldate:document.getElementById('sr-deldate').value,time:document.getElementById('sr-time').value,model:document.getElementById('sr-model').value.trim(),status:status||'保養',note:document.getElementById('sr-note').value.trim(),photos:[]});
+  upsertClient(plate,name,phone);saveCars();hov('ov-scan');renderCars();
+}
+function forceScan(){pForceScan=true;document.getElementById('scan-dup').style.display='none';saveScan();}
+
+// ── 手動新增 ──
+function openManual(){
+  hov('ov-choice');manualSt='保養';pForceManual=false;
+  buildChips('chips-manual',manualSt,function(v){manualSt=v;},'ci-manual');
+  ['m-plate','m-name','m-phone','m-wo','m-model','m-custom','m-note'].forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('m-date').value=todayStr();document.getElementById('m-deldate').value=todayStr();document.getElementById('m-time').value='';
+  document.getElementById('m-dup').style.display='none';document.getElementById('af-hint').style.display='none';
+  document.getElementById('m-notice-sec').style.display='none';document.getElementById('m-ph').style.display='none';
+  sov('ov-manual');
+}
+function hideManualDup(){document.getElementById('m-dup').style.display='none';pForceManual=false;}
+function mPlateIn(){
+  plateHint('m-plate','m-ph');hideManualDup();
+  var plate=getPlate('m-plate');
+  var cl=getClient(plate);
+  var hint=document.getElementById('af-hint'),ns=document.getElementById('m-notice-sec');
+  if(cl){document.getElementById('m-name').value=cl.name||'';document.getElementById('m-phone').value=cl.phone||'';hint.style.display='block';if(cl.notice){document.getElementById('m-notice-tx').textContent=cl.notice;ns.style.display='block';}else ns.style.display='none';}
+  else{hint.style.display='none';ns.style.display='none';}
+}
+function confirmManualCustom(){var v=document.getElementById('m-custom').value.trim();if(!v)return;manualSt=v;buildChips('chips-manual',manualSt,function(val){manualSt=val;},'ci-manual');}
+function saveManual(){
+  var plate=getPlate('m-plate'),name=document.getElementById('m-name').value.trim();
+  var status=manualSt==='__c'?document.getElementById('m-custom').value.trim():manualSt;
+  if(!plate){alert('請填寫車牌號碼');return;}if(!name){alert('請填寫客戶姓名');return;}if(!status){alert('請選擇狀態');return;}
+  var dup=findDup(plate);
+  if(dup&&!pForceManual){document.getElementById('m-dup-msg').textContent='車牌「'+plate+'」目前已有進行中的紀錄（'+dup.name+'，'+dup.status+'），是否仍要新增一筆？';document.getElementById('m-dup').style.display='block';pForceManual=true;return;}
+  var phone=document.getElementById('m-phone').value.trim();
+  var wo=document.getElementById('m-wo').value.trim()||('WO-'+('00'+nid).slice(-3));
+  cars.push({id:nid++,plate:plate,name:name,phone:phone,wo:wo,indate:document.getElementById('m-date').value,deldate:document.getElementById('m-deldate').value,time:document.getElementById('m-time').value,model:document.getElementById('m-model').value.trim(),status:status,note:document.getElementById('m-note').value.trim(),photos:[]});
+  upsertClient(plate,name,phone);saveCars();hov('ov-manual');renderCars();
+}
+function forceManual(){pForceManual=true;document.getElementById('m-dup').style.display='none';saveManual();}
+
+// ── 編輯車輛 ──
+var noticeEditOn=false;
+function openEdit(id){
+  var c=cars.find(function(x){return x.id===id;});if(!c)return;
+  editId=id;editSt=c.status;noticeEditOn=false;
+  document.getElementById('ed-title').textContent=c.plate;
+  document.getElementById('ed-sub').textContent=c.name+(c.wo?' · '+c.wo:'');
+  document.getElementById('ed-date').value=c.indate||todayStr();
+  document.getElementById('ed-deldate').value=c.deldate||todayStr();
+  document.getElementById('ed-time').value=c.time||'';
+  document.getElementById('ed-wo').value=c.wo||'';
+  document.getElementById('ed-name').value=c.name||'';
+  document.getElementById('ed-phone').value=c.phone||'';
+  document.getElementById('ed-model').value=c.model||'';
+  document.getElementById('ed-note').value=c.note||'';
+  document.getElementById('ed-custom').value='';
+  buildChips('chips-edit',editSt,function(v){editSt=v;},'ci-edit');
+  var cl=getClient(c.plate);
+  document.getElementById('ed-notice-tx').textContent=cl&&cl.notice?cl.notice:'（尚無注意事項）';
+  document.getElementById('ed-notice-in').value=cl&&cl.notice?cl.notice:'';
+  document.getElementById('ed-notice-in').style.display='none';
+  document.getElementById('ed-notice-save').style.display='none';
+  document.getElementById('ed-notice-btn').textContent='編輯';
+  document.getElementById('ed-notice-sec').style.display='block';
+  renderEditPhotos();sov('ov-edit');
+}
+function toggleNoticeEdit(){
+  noticeEditOn=!noticeEditOn;
+  document.getElementById('ed-notice-in').style.display=noticeEditOn?'block':'none';
+  document.getElementById('ed-notice-save').style.display=noticeEditOn?'block':'none';
+  document.getElementById('ed-notice-btn').textContent=noticeEditOn?'取消':'編輯';
+}
+function saveNotice(){
+  var c=cars.find(function(x){return x.id===editId;});if(!c)return;
+  var k=normPlate(c.plate);if(!clients[k])clients[k]={plate:k,name:c.name,phone:c.phone,notice:'',memo:''};
+  clients[k].notice=document.getElementById('ed-notice-in').value.trim();
+  document.getElementById('ed-notice-tx').textContent=clients[k].notice||'（尚無注意事項）';
+  noticeEditOn=false;document.getElementById('ed-notice-in').style.display='none';document.getElementById('ed-notice-save').style.display='none';document.getElementById('ed-notice-btn').textContent='編輯';
+  saveClients();renderCars();
+}
+function confirmEditCustom(){var v=document.getElementById('ed-custom').value.trim();if(!v)return;editSt=v;buildChips('chips-edit',editSt,function(val){editSt=val;},'ci-edit');}
+function saveEdit(){
+  var c=cars.find(function(x){return x.id===editId;});if(!c)return;
+  var status=editSt==='__c'?document.getElementById('ed-custom').value.trim():editSt;if(!status)status=c.status;
+  c.indate=document.getElementById('ed-date').value;c.deldate=document.getElementById('ed-deldate').value;c.time=document.getElementById('ed-time').value;
+  c.wo=document.getElementById('ed-wo').value.trim()||c.wo;c.name=document.getElementById('ed-name').value.trim()||c.name;
+  c.phone=document.getElementById('ed-phone').value.trim();c.model=document.getElementById('ed-model').value.trim();
+  c.note=document.getElementById('ed-note').value.trim();c.status=status;
+  upsertClient(c.plate,c.name,c.phone);saveCars();hov('ov-edit');renderCars();
+}
+function showCf(action){
+  var c=cars.find(function(x){return x.id===editId;});if(!c)return;cfAction=action;
+  if(action==='done'){
+    document.getElementById('cf-title').textContent='確認已完成交車？';
+    document.getElementById('cf-desc').textContent='車輛 '+c.plate+'（'+c.name+'）將從廠內車輛移除，儲存至維修車歷，照片一併保留。';
+    document.getElementById('cf-warn').style.display='none';
+    document.getElementById('cf-btn').textContent='確認完成';document.getElementById('cf-btn').className='bb bb-done';
+  }else{
+    document.getElementById('cf-title').textContent='確認取消此車輛？';
+    document.getElementById('cf-desc').textContent='車輛 '+c.plate+'（'+c.name+'）將直接從清單移除。';
+    document.getElementById('cf-warn').style.display='block';
+    document.getElementById('cf-warn-tx').textContent='⚠️ 此操作不會儲存至維修車歷，所有進度與照片將永久刪除，無法復原。';
+    document.getElementById('cf-btn').textContent='確認取消（不保留）';document.getElementById('cf-btn').className='bb bb-del';
+  }
+  sov('ov-cf');
+}
+function doCf(){
+  var c=cars.find(function(x){return x.id===editId;});if(!c)return;
+  if(cfAction==='done'){
+    var k=normPlate(c.plate);if(!clients[k])clients[k]={plate:k,name:c.name,phone:c.phone,notice:'',memo:''};
+    else{clients[k].name=c.name;clients[k].phone=c.phone;}
+    var copy={};for(var key in c)copy[key]=c[key];
+    copy.photos=c.photos?c.photos.slice():[];copy.completedAt=nowStr();copy.clientNotice=clients[k].notice||'';
+    histList.unshift(copy);saveHist();saveClients();
+  }
+  cars=cars.filter(function(x){return x.id!==editId;});saveCars();
+  hov('ov-cf');hov('ov-edit');renderCars();if(cfAction==='done')renderHist();
+}
+
+// ── 照片 ──
+function triggerPhoto(carId){photoCarId=carId;document.getElementById('inp-photo').click();}
+function triggerPhotoHist(histId){photoHistId=histId;document.getElementById('inp-photo-hist').click();}
+function handlePhoto(e){
+  var file=e.target.files[0];if(!file)return;
+  var r=new FileReader();r.onload=function(ev){
+    var c=cars.find(function(x){return x.id===photoCarId;});
+    if(c){if(!c.photos)c.photos=[];c.photos.push({src:ev.target.result,ts:nowStr()});}
+    e.target.value='';saveCars();renderEditPhotos();renderCars();
+  };r.readAsDataURL(file);
+}
+function handlePhotoHist(e){
+  var file=e.target.files[0];if(!file)return;
+  var r=new FileReader();r.onload=function(ev){
+    var h=histList.find(function(x){return x.id===photoHistId;});
+    if(h){if(!h.photos)h.photos=[];h.photos.push({src:ev.target.result,ts:nowStr()});}
+    e.target.value='';saveHist();renderHistPhotos();renderHist();
+  };r.readAsDataURL(file);
+}
+function renderEditPhotos(){
+  var c=cars.find(function(x){return x.id===editId;});if(!c)return;
+  var photos=c.photos||[];document.getElementById('ed-ph-count').textContent=photos.length?photos.length+'張':'';
+  var html='';
+  photos.forEach(function(p,i){html+='<div class="ph-lg" onclick="openLb(\'car\','+editId+','+i+')"><img src="'+p.src+'"><button class="del" onclick="event.stopPropagation();delPhoto(\'car\','+editId+','+i+')">✕</button></div>';});
+  html+='<div class="add-ph-lg" onclick="triggerPhoto('+editId+')"><span style="font-size:24px">📷</span><span>拍照</span></div>';
+  document.getElementById('ed-ph-grid').innerHTML=html;
+}
+function renderHistPhotos(){
+  var h=histList.find(function(x){return x.id===hdId;});if(!h)return;
+  var photos=h.photos||[];document.getElementById('hd-ph-count').textContent=photos.length?photos.length+'張':'';
+  var html='';
+  photos.forEach(function(p,i){html+='<div class="ph-lg" onclick="openLb(\'hist\','+hdId+','+i+')"><img src="'+p.src+'"><button class="del" onclick="event.stopPropagation();delPhoto(\'hist\','+hdId+','+i+')">✕</button></div>';});
+  html+='<div class="add-ph-lg" onclick="triggerPhotoHist('+hdId+')"><span style="font-size:24px">📷</span><span>新增</span></div>';
+  document.getElementById('hd-ph-grid').innerHTML=html;
+}
+function delPhoto(ctx,id,idx){
+  if(ctx==='car'){var c=cars.find(function(x){return x.id===id;});if(c&&c.photos)c.photos.splice(idx,1);saveCars();renderEditPhotos();renderCars();}
+  else{var h=histList.find(function(x){return x.id===id;});if(h&&h.photos)h.photos.splice(idx,1);saveHist();renderHistPhotos();renderHist();}
+}
+function openLb(ctx,id,idx){
+  lbCtx=ctx;lbRef={id:id,idx:idx};
+  var photos=[];
+  if(ctx==='car'){var c=cars.find(function(x){return x.id===id;});if(c)photos=c.photos||[];}
+  else{var h=histList.find(function(x){return x.id===id;});if(h)photos=h.photos||[];}
+  if(!photos[idx])return;
+  document.getElementById('lb-img').src=photos[idx].src;
+  document.getElementById('lightbox').style.display='flex';
+}
+function closeLb(){document.getElementById('lightbox').style.display='none';lbCtx=null;lbRef=null;}
+function delFromLb(){if(!lbRef)return;delPhoto(lbCtx,lbRef.id,lbRef.idx);closeLb();}
+
+// ── 渲染車輛 ──
+function renderCars(){
+  var q=document.getElementById('srch-car').value.toLowerCase().replace(/-/g,'');
+  var filtered=cars.filter(function(c){return c.plate.replace(/-/g,'').toLowerCase().indexOf(q)>=0||c.name.indexOf(q)>=0||c.wo.toLowerCase().indexOf(q)>=0;});
+  document.getElementById('s-all').textContent=cars.length;
+  var rep=0,wait=0,done=0;
+  cars.forEach(function(c){if(c.status==='維修中')rep++;if(c.status==='待料')wait++;if(c.status==='完工待領')done++;});
+  document.getElementById('s-rep').textContent=rep;document.getElementById('s-wait').textContent=wait;document.getElementById('s-done').textContent=done;
+  var list=document.getElementById('car-list');
+  if(!filtered.length){list.innerHTML='<div class="empty">尚無車輛紀錄<br>點右下角 ＋ 新增</div>';return;}
+  var html='';
+  filtered.forEach(function(c){
+    var st=gSt(c.status),cl=getClient(c.plate),photos=c.photos||[];
+    html+='<div class="card" onclick="openEdit('+c.id+')">';
+    html+='<div class="card-hd"><div class="plate">'+c.plate+'</div><span class="badge" style="'+bSt(c.status)+'">'+c.status+'</span></div>';
+    html+='<div class="cg">';
+    html+='<div class="fl"><span class="lbl">客戶姓名</span><span class="val">'+c.name+'</span></div>';
+    html+='<div class="fl"><span class="lbl">聯絡電話</span><span class="val">'+(c.phone||'—')+'</span></div>';
+    html+='<div class="fl"><span class="lbl">工單號碼</span><span class="val">'+(c.wo||'—')+'</span></div>';
+    html+='<div class="fl"><span class="lbl">車型</span><span class="val">'+(c.model||'—')+'</span></div>';
+    html+='<div class="fl"><span class="lbl">進廠日期</span><span class="val">'+(c.indate?fmtDate(c.indate):'—')+'</span></div>';
+    html+='<div class="fl"><span class="lbl">預計交車</span><span class="val">'+(c.deldate?fmtDate(c.deldate):'—')+(c.time?' '+c.time:'')+'</span></div>';
+    html+='</div>';
+    if(c.note)html+='<div class="note-row">備註：'+c.note+'</div>';
+    if(cl&&cl.notice)html+='<div class="notice-bar"><span>⚠ '+cl.notice+'</span></div>';
+    html+='<div class="photo-strip">';
+    photos.forEach(function(p,i){html+='<div class="ph-thumb" onclick="event.stopPropagation();openLb(\'car\','+c.id+','+i+')"><img src="'+p.src+'"><button class="del" onclick="event.stopPropagation();delPhoto(\'car\','+c.id+','+i+')">✕</button></div>';});
+    html+='<div class="add-ph" onclick="event.stopPropagation();triggerPhoto('+c.id+')"><span style="font-size:18px">📷</span><span>拍照</span></div>';
+    html+='</div>';
+    html+='<div class="prog"><div class="prog-fill" style="width:'+st.p+'%;background:'+st.b+'"></div></div>';
+    html+='</div>';
+  });
+  list.innerHTML=html;
+}
+
+// ── 待辦事項 ──
+function openTodoAdd(){
+  todoType='待料';urgOn=false;document.getElementById('urg-toggle').classList.remove('on');
+  buildChips('chips-todo',todoType,function(v){todoType=v;},'ci-todo');
+  ['ta-plate','ta-name','ta-desc','ta-meta','ta-custom'].forEach(function(id){document.getElementById(id).value='';});
+  sov('ov-todo-add');
+}
+function confirmTodoCustom(){var v=document.getElementById('ta-custom').value.trim();if(!v)return;todoType=v;buildChips('chips-todo',todoType,function(val){todoType=val;},'ci-todo');}
+function toggleUrg(){urgOn=!urgOn;document.getElementById('urg-toggle').classList.toggle('on',urgOn);}
+function saveTodo(){
+  var plate=normPlate(document.getElementById('ta-plate').value);
+  var type=todoType==='__c'?document.getElementById('ta-custom').value.trim():todoType;
+  if(!plate){alert('請填寫車牌號碼');return;}if(!type){alert('請選擇類型');return;}
+  todos.unshift({id:nid++,plate:plate,name:document.getElementById('ta-name').value.trim(),type:type,desc:document.getElementById('ta-desc').value.trim(),meta:document.getElementById('ta-meta').value.trim()||'剛新增',urg:urgOn,done:false});
+  saveTodos();hov('ov-todo-add');renderTodos();
+}
+function buildTodoFilters(){
+  var types=['全部'];todos.forEach(function(t){if(types.indexOf(t.type)<0)types.push(t.type);});
+  document.getElementById('todo-filters').innerHTML=types.map(function(t){return '<div class="fp'+(t===todoFilter?' on':'')+'" onclick="setTodoFilter(\''+t+'\',this)">'+t+'</div>';}).join('');
+}
+function renderTodos(){
+  buildTodoFilters();
+  var pend=todos.filter(function(t){return !t.done;}),done=todos.filter(function(t){return t.done;});
+  document.getElementById('t-all').textContent=pend.length;
+  document.getElementById('t-urg').textContent=pend.filter(function(t){return t.urg;}).length;
+  document.getElementById('t-fin').textContent=done.length;
+  document.getElementById('todo-cnt').textContent=pend.length;
+  function ch(t){var cls='todo-card'+(t.urg&&!t.done?' urg':'')+(t.done?' dnc':'');return '<div class="'+cls+'"><div class="chk'+(t.done?' on':'')+'" onclick="toggleTodo('+t.id+')"><div class="chk-in"></div></div><div class="tb"><div class="tt"><span style="font-size:13px;font-weight:600;color:var(--text)">'+t.plate+'</span><span class="badge" style="'+bSt(t.type)+'">'+t.type+'</span></div><div style="font-size:13px;color:var(--text2);line-height:1.4;margin-bottom:4px">'+(t.desc||'—')+'</div><div style="display:flex;gap:8px"><span style="font-size:11px;color:var(--text3)">'+t.name+'</span><span style="font-size:11px;color:'+(t.urg&&!t.done?'#a32d2d':'var(--text3)')+'">'+t.meta+'</span></div></div></div>';}
+  var urgP=pend.filter(function(t){return t.urg&&(todoFilter==='全部'||t.type===todoFilter);});
+  var normP=pend.filter(function(t){return !t.urg&&(todoFilter==='全部'||t.type===todoFilter);});
+  var doneF=done.filter(function(t){return todoFilter==='全部'||t.type===todoFilter;});
+  var html='';
+  if(urgP.length)html+='<div class="sec-lb">緊急</div>'+urgP.map(ch).join('');
+  if(normP.length)html+='<div class="sec-lb">一般待辦</div>'+normP.map(ch).join('');
+  if(doneF.length)html+='<div class="divider"></div><div class="sec-lb">已完成</div>'+doneF.map(ch).join('');
+  if(!urgP.length&&!normP.length&&!doneF.length)html='<div class="empty">此類別暫無待辦事項</div>';
+  document.getElementById('todo-list').innerHTML=html;
+}
+function toggleTodo(id){var t=todos.find(function(x){return x.id===id;});if(t){t.done=!t.done;saveTodos();renderTodos();}}
+function setTodoFilter(f,el){todoFilter=f;document.querySelectorAll('.fp').forEach(function(e){e.classList.remove('on');});el.classList.add('on');renderTodos();}
+
+// ── 客戶 ──
+function renderClients(){
+  var q=document.getElementById('srch-client').value.toLowerCase().trim().replace(/-/g,'');
+  var visitMap={};
+  function rv(plate,d){var k=normPlate(plate);if(!visitMap[k]||d>visitMap[k])visitMap[k]=d;}
+  cars.forEach(function(c){rv(c.plate,c.indate||'');});
+  histList.forEach(function(h){rv(h.plate,h.indate||'');});
+  var allPlates={};
+  Object.keys(clients).forEach(function(p){allPlates[p]=true;});
+  cars.forEach(function(c){allPlates[normPlate(c.plate)]=true;});
+  histList.forEach(function(h){allPlates[normPlate(h.plate)]=true;});
+  var list=[];
+  Object.keys(allPlates).forEach(function(p){var cl=clients[p]||{plate:p,name:'—',phone:'—',notice:'',memo:''};list.push({plate:p,name:cl.name,phone:cl.phone,notice:cl.notice,memo:cl.memo,lastVisit:visitMap[p]||''});});
+  list.sort(function(a,b){return (b.lastVisit||'').localeCompare(a.lastVisit||'');});
+  var total=list.length;list=list.slice(0,50);
+  if(q)list=list.filter(function(cl){return cl.plate.replace(/-/g,'').toLowerCase().indexOf(q)>=0||cl.name.indexOf(q)>=0||(cl.phone&&cl.phone.indexOf(q)>=0);});
+  document.getElementById('client-lbl').textContent='最近進廠 '+Math.min(total,50)+' 位客戶';
+  var el=document.getElementById('client-list');
+  if(!list.length){el.innerHTML='<div class="empty">找不到符合的客戶</div>';return;}
+  el.innerHTML=list.map(function(cl){
+    var initials=cl.name&&cl.name!=='—'?cl.name.slice(-2):'?';
+    return '<div class="card" onclick="openClientDetail(\''+cl.plate+'\')">'+'<div style="display:flex;align-items:center;gap:12px">'+'<div class="avatar">'+initials+'</div>'+'<div style="flex:1;min-width:0"><div style="font-size:15px;font-weight:600;color:var(--text)">'+cl.name+'</div><div style="font-size:12px;color:var(--text3)">'+cl.plate+(cl.phone&&cl.phone!=='—'?' · '+cl.phone:'')+'</div></div>'+(cl.lastVisit?'<div style="font-size:11px;color:var(--text3)">'+fmtDate(cl.lastVisit)+'</div>':'')+'</div>'+(cl.notice?'<div class="notice-bar" style="margin-top:8px"><span>⚠ '+cl.notice+'</span></div>':'')+'</div>';
+  }).join('');
+}
+function openClientDetail(plate){
+  var k=normPlate(plate),cl=clients[k]||{plate:k,name:'—',phone:'—',notice:'',memo:''};
+  editingClientPlate=k;
+  document.getElementById('cl-av').textContent=cl.name&&cl.name!=='—'?cl.name.slice(-2):'?';
+  document.getElementById('cl-name').textContent=cl.name;document.getElementById('cl-phone').textContent=cl.phone||'—';
+  document.getElementById('cl-notice').textContent=cl.notice||'（無）';document.getElementById('cl-memo').textContent=cl.memo||'（無）';
+  document.getElementById('cl-plates').textContent=k;
+  var visits=[];
+  cars.forEach(function(c){if(normPlate(c.plate)===k)visits.push({date:c.indate,wo:c.wo,status:c.status,model:c.model});});
+  histList.forEach(function(h){if(normPlate(h.plate)===k)visits.push({date:h.indate,wo:h.wo,status:h.status,model:h.model});});
+  visits.sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
+  document.getElementById('cl-visits').innerHTML=visits.length?visits.map(function(v){return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:.5px solid var(--card-border)"><div><div style="font-size:13px;font-weight:600;color:var(--text)">'+fmtDate(v.date)+'</div><div style="font-size:11px;color:var(--text3)">'+(v.wo||'—')+(v.model?' · '+v.model:'')+'</div></div><span class="badge" style="'+bSt(v.status)+'">'+v.status+'</span></div>';}).join(''):'<div style="font-size:13px;color:var(--text3)">暫無進廠紀錄</div>';
+  sov('ov-client');
+}
+function openEditClient(){
+  var k=editingClientPlate,cl=clients[k]||{};
+  document.getElementById('ec-sub').textContent=k;
+  document.getElementById('ec-name').value=cl.name||'';document.getElementById('ec-phone').value=cl.phone||'';
+  document.getElementById('ec-notice').value=cl.notice||'';document.getElementById('ec-memo').value=cl.memo||'';
+  sov('ov-edit-client');
+}
+function saveClient(){
+  var k=editingClientPlate;if(!clients[k])clients[k]={plate:k,name:'',phone:'',notice:'',memo:''};
+  clients[k].name=document.getElementById('ec-name').value.trim()||clients[k].name;
+  clients[k].phone=document.getElementById('ec-phone').value.trim();
+  clients[k].notice=document.getElementById('ec-notice').value.trim();
+  clients[k].memo=document.getElementById('ec-memo').value.trim();
+  saveClients();hov('ov-edit-client');openClientDetail(k);renderClients();renderCars();
+}
+
+// ── 維修車歷 ──
+function renderHist(){
+  var q=document.getElementById('srch-hist').value.toLowerCase().replace(/-/g,'');
+  var filtered=histList.filter(function(h){return h.plate.replace(/-/g,'').toLowerCase().indexOf(q)>=0||h.name.indexOf(q)>=0||(h.wo&&h.wo.toLowerCase().indexOf(q)>=0);});
+  var list=document.getElementById('hist-list');
+  if(!filtered.length){list.innerHTML='<div class="empty">尚無完工紀錄<br>車輛按「已完成交車」後會儲存於此</div>';return;}
+  list.innerHTML=filtered.map(function(h){
+    var photos=h.photos||[];
+    return '<div class="hist-card" onclick="openHistDetail('+h.id+')">'+'<div class="card-hd"><div class="plate">'+h.plate+'</div><span class="badge" style="'+bSt(h.status)+'">'+h.status+'</span></div>'+'<div class="cg">'+'<div class="fl"><span class="lbl">客戶姓名</span><span class="val">'+h.name+'</span></div>'+'<div class="fl"><span class="lbl">工單號碼</span><span class="val">'+(h.wo||'—')+'</span></div>'+'<div class="fl"><span class="lbl">進廠日期</span><span class="val">'+(h.indate?fmtDate(h.indate):'—')+'</span></div>'+'<div class="fl"><span class="lbl">完工時間</span><span class="val">'+h.completedAt+'</span></div>'+'</div>'+(photos.length?'<div class="photo-strip">'+photos.slice(0,4).map(function(p,i){return '<div class="ph-thumb"><img src="'+p.src+'"></div>';}).join('')+(photos.length>4?'<div class="ph-thumb" style="display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--text3)">+'+（photos.length-4)+'</div>':'')+'</div>':'')+'<div style="margin-top:5px;font-size:11px;color:var(--text3)">點擊查看詳細 / 新增照片</div>'+'</div>';
+  }).join('');
+}
+function openHistDetail(id){
+  var h=histList.find(function(x){return x.id===id;});if(!h)return;
+  hdId=id;
+  document.getElementById('hd-plate').textContent=h.plate;
+  document.getElementById('hd-sub').textContent=h.name+(h.wo?' · '+h.wo:'')+'　完工：'+h.completedAt;
+  document.getElementById('hd-info').innerHTML='<div class="fl"><span class="lbl">客戶姓名</span><span class="val">'+h.name+'</span></div><div class="fl"><span class="lbl">聯絡電話</span><span class="val">'+(h.phone||'—')+'</span></div><div class="fl"><span class="lbl">工單號碼</span><span class="val">'+(h.wo||'—')+'</span></div><div class="fl"><span class="lbl">車型</span><span class="val">'+(h.model||'—')+'</span></div><div class="fl"><span class="lbl">進廠日期</span><span class="val">'+(h.indate?fmtDate(h.indate):'—')+'</span></div><div class="fl"><span class="lbl">交車日期</span><span class="val">'+(h.deldate?fmtDate(h.deldate):'—')+(h.time?' '+h.time:'')+'</span></div>';
+  renderHistPhotos();sov('ov-hist');
+}
+
+// ── Service Worker ──
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js').catch(function(){});
+}
+
+// ── 初始化 ──
+renderCars();renderTodos();
+</script>
+</body>
+</html>
