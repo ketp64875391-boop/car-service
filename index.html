@@ -48,7 +48,8 @@ body{
 
 /* Stats row */
 .stats{display:flex;gap:8px;padding:10px 14px 4px;flex-shrink:0}
-.stat{flex:1;background:var(--card);border-radius:10px;padding:8px 10px;border:0.5px solid var(--cb)}
+.stat{flex:1;background:var(--card);border-radius:10px;padding:8px 10px;border:0.5px solid var(--cb);transition:border-color 0.15s}
+.stat.active{border:1.5px solid var(--accent);background:var(--bg)}
 .stat-n{font-size:20px;font-weight:600;color:var(--t1)}
 .stat-l{font-size:11px;color:var(--t3)}
 
@@ -282,10 +283,10 @@ body{
   <div class="page active" id="pg-cars">
     <div class="nav"><h1>廠內車輛</h1><p id="car-date"></p></div>
     <div class="stats">
-      <div class="stat"><div class="stat-n" id="s-all">0</div><div class="stat-l">全部</div></div>
-      <div class="stat"><div class="stat-n" style="color:#1a7a35" id="s-rep">0</div><div class="stat-l">維修中</div></div>
-      <div class="stat"><div class="stat-n" style="color:#b35a00" id="s-wait">0</div><div class="stat-l">待料</div></div>
-      <div class="stat"><div class="stat-n" style="color:#0d5ea6" id="s-done">0</div><div class="stat-l">完工</div></div>
+      <div class="stat" onclick="setCarFilter('全部',this)" style="cursor:pointer" id="sf-all"><div class="stat-n" id="s-all">0</div><div class="stat-l">全部</div></div>
+      <div class="stat" onclick="setCarFilter('維修中',this)" style="cursor:pointer" id="sf-rep"><div class="stat-n" style="color:#1a7a35" id="s-rep">0</div><div class="stat-l">維修中</div></div>
+      <div class="stat" onclick="setCarFilter('完工待交車',this)" style="cursor:pointer" id="sf-ready"><div class="stat-n" style="color:#185FA5" id="s-ready">0</div><div class="stat-l">完工待交車</div></div>
+      <div class="stat" onclick="setCarFilter('待料',this)" style="cursor:pointer" id="sf-wait"><div class="stat-n" style="color:#b35a00" id="s-wait">0</div><div class="stat-l">待料</div></div>
     </div>
     <div class="srch"><span style="font-size:16px;color:var(--t3)">⌕</span><input id="srch-car" placeholder="搜尋車牌、客戶或工單…" oninput="renderCars()"></div>
     <div class="scroll" id="car-list"></div>
@@ -460,9 +461,12 @@ body{
         <button class="bb bb-cancel" onclick="hov('ov-edit')">關閉</button>
         <button class="bb bb-save" onclick="saveEdit()">儲存修改</button>
       </div>
-      <div class="brow">
+      <div class="brow" style="margin-bottom:8px">
         <button class="bb bb-red" onclick="showCf('cancel')">取消此車輛</button>
-        <button class="bb bb-dark" onclick="showCf('done')">已完成交車</button>
+        <button class="bb" style="background:#185FA5;border:none;color:#fff" onclick="showCf('ready')">完工待交車</button>
+      </div>
+      <div class="brow">
+        <button class="bb bb-dark" onclick="showCf('done')">已交車</button>
       </div>
     </div>
   </div>
@@ -587,6 +591,7 @@ var SS={
   '追加':{bg:'#fce8e8',c:'#791F1F',p:40,b:'#E24B4A'},
   '其他':{bg:'#F1EFE8',c:'#444441',p:15,b:'#888'},
   '維修中':{bg:'#e3f9ea',c:'#1a7a35',p:55,b:'#4cd964'},
+  '完工待交車':{bg:'#e3f2fd',c:'#0d5ea6',p:95,b:'#185FA5'},
   '完工待領':{bg:'#e3f2fd',c:'#0d5ea6',p:100,b:'#5ac8fa'},
   '已離場':{bg:'#fce8e8',c:'#a32d2d',p:10,b:'#E24B4A'},
   'QC':{bg:'#e3f9ea',c:'#1a7a35',p:80,b:'#4cd964'}
@@ -603,6 +608,7 @@ var urgOn=false,editId=null,cfAction=null;
 var pForceManual=false,pForceScan=false,noticeEditOn=false;
 var photoCarId=null,photoHistId=null,lbCtx=null,lbRef=null;
 var editingClientPlate=null,hdId=null,todoFilter='全部';
+var carFilter='全部';
 var nid=10;
 
 // ── LocalStorage ──
@@ -897,10 +903,15 @@ function saveEdit(){
 function showCf(action){
   var c=cars.find(function(x){return x.id===editId;});if(!c)return;cfAction=action;
   if(action==='done'){
-    document.getElementById('cf-title').textContent='確認已完成交車？';
+    document.getElementById('cf-title').textContent='確認已交車？';
     document.getElementById('cf-desc').textContent='車輛 '+c.plate+'（'+c.name+'）將從廠內車輛移除，儲存至維修車歷，照片一併保留。';
     document.getElementById('cf-warn').style.display='none';
-    document.getElementById('cf-btn').textContent='確認完成';document.getElementById('cf-btn').className='bb bb-done';
+    document.getElementById('cf-btn').textContent='確認已交車';document.getElementById('cf-btn').className='bb bb-done';
+  }else if(action==='ready'){
+    document.getElementById('cf-title').textContent='標記為完工待交車？';
+    document.getElementById('cf-desc').textContent='車輛 '+c.plate+'（'+c.name+'）狀態將更新為「完工待交車」，繼續保留在車輛清單中。';
+    document.getElementById('cf-warn').style.display='none';
+    document.getElementById('cf-btn').textContent='確認完工待交車';document.getElementById('cf-btn').className='bb bb-save';
   }else{
     document.getElementById('cf-title').textContent='確認取消此車輛？';
     document.getElementById('cf-desc').textContent='車輛 '+c.plate+'（'+c.name+'）將直接從清單移除。';
@@ -912,6 +923,11 @@ function showCf(action){
 }
 function doCf(){
   var c=cars.find(function(x){return x.id===editId;});if(!c)return;
+  if(cfAction==='ready'){
+    // 完工待交車：只更新狀態，留在清單
+    c.status='完工待交車';
+    saveCars();hov('ov-cf');hov('ov-edit');renderCars();return;
+  }
   if(cfAction==='done'){
     var k=normPlate(c.plate);
     if(!clients[k])clients[k]={plate:k,name:c.name,phone:c.phone,notice:'',memo:''};
@@ -985,19 +1001,48 @@ function openLb(ctx,id,idx){
 function closeLb(){document.getElementById('lightbox').style.display='none';lbCtx=null;lbRef=null;}
 function delFromLb(){if(!lbRef)return;delPhoto(lbCtx,lbRef.id,lbRef.idx);closeLb();}
 
+// ── 車輛清單篩選 ──
+function setCarFilter(f,el){
+  carFilter=f;
+  // update stat highlight
+  ['sf-all','sf-rep','sf-ready','sf-wait'].forEach(function(id){
+    var s=document.getElementById(id);if(s)s.classList.remove('active');
+  });
+  if(el)el.classList.add('active');
+  renderCars();
+}
+
 // ── 渲染車輛清單 ──
+function carSortKey(c){
+  // 完工待交車排最後（前綴 '9'），其他按交車日期時間
+  var prefix=c.status==='完工待交車'?'9':'0';
+  if(!c.deldate)return prefix+'9999-99-99 99:99';
+  return prefix+c.deldate+' '+(c.time||'23:59');
+}
 function renderCars(){
   var q=document.getElementById('srch-car').value.toLowerCase().replace(/-/g,'');
-  var filtered=cars.filter(function(c){
+  var all=cars.filter(function(c){
     return c.plate.replace(/-/g,'').toLowerCase().indexOf(q)>=0||
            c.name.indexOf(q)>=0||c.wo.toLowerCase().indexOf(q)>=0;
   });
+  // 更新數字
   document.getElementById('s-all').textContent=cars.length;
-  var rep=0,wait=0,done=0;
-  cars.forEach(function(c){if(c.status==='維修中')rep++;if(c.status==='待料')wait++;if(c.status==='完工待領')done++;});
+  var rep=0,ready=0,wait=0;
+  cars.forEach(function(c){
+    if(c.status==='維修中')rep++;
+    if(c.status==='完工待交車')ready++;
+    if(c.status==='待料')wait++;
+  });
   document.getElementById('s-rep').textContent=rep;
+  document.getElementById('s-ready').textContent=ready;
   document.getElementById('s-wait').textContent=wait;
-  document.getElementById('s-done').textContent=done;
+  // 套用篩選
+  var filtered=all;
+  if(carFilter==='維修中')filtered=all.filter(function(c){return c.status==='維修中';});
+  else if(carFilter==='完工待交車')filtered=all.filter(function(c){return c.status==='完工待交車';});
+  else if(carFilter==='待料')filtered=all.filter(function(c){return c.status==='待料';});
+  // 排序：完工待交車往後，其餘按交車時間
+  filtered.sort(function(a,b){return carSortKey(a).localeCompare(carSortKey(b));});
   var list=document.getElementById('car-list');
   if(!filtered.length){list.innerHTML='<div class="empty">尚無車輛紀錄<br>點右下角 ＋ 新增</div>';return;}
   var html='';
@@ -1222,6 +1267,7 @@ if('serviceWorker' in navigator){
 }
 
 // ── Init ──
+document.getElementById('sf-all').classList.add('active');
 renderCars();renderTodos();
 </script>
 </body>
