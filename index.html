@@ -49,7 +49,7 @@ body{
 /* Stats row */
 .stats{display:flex;gap:8px;padding:10px 14px 4px;flex-shrink:0}
 .stat{flex:1;background:var(--card);border-radius:10px;padding:8px 10px;border:0.5px solid var(--cb);transition:border-color 0.15s}
-.stat.active{border:1.5px solid var(--accent);background:var(--bg)}
+.stat.active{border:1.5px solid var(--accent);}
 .stat-n{font-size:20px;font-weight:600;color:var(--t1)}
 .stat-l{font-size:11px;color:var(--t3)}
 
@@ -78,6 +78,9 @@ body{
 .lbl{font-size:11px;color:var(--t3)}
 .val{font-size:13px;color:var(--t1);font-weight:500}
 .note-row{margin-top:7px;font-size:12px;color:var(--t3)}
+.quick-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.qtag{padding:5px 11px;border-radius:16px;font-size:12px;border:0.5px solid var(--cb);cursor:pointer;background:var(--bg);color:var(--t2);touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.qtag:active{background:var(--accent);color:#fff;border-color:var(--accent)}
 .notice-bar{background:#fff8e1;border-radius:9px;padding:7px 10px;margin-top:8px;display:flex;align-items:flex-start;gap:6px}
 .notice-bar span{font-size:12px;color:#854F0B;line-height:1.4;flex:1}
 .prog{height:3px;background:var(--cb);border-radius:2px;margin-top:8px}
@@ -283,10 +286,10 @@ body{
   <div class="page active" id="pg-cars">
     <div class="nav"><h1>廠內車輛</h1><p id="car-date"></p></div>
     <div class="stats">
-      <div class="stat" onclick="setCarFilter('全部',this)" style="cursor:pointer" id="sf-all"><div class="stat-n" id="s-all">0</div><div class="stat-l">全部</div></div>
-      <div class="stat" onclick="setCarFilter('維修中',this)" style="cursor:pointer" id="sf-rep"><div class="stat-n" style="color:#1a7a35" id="s-rep">0</div><div class="stat-l">維修中</div></div>
-      <div class="stat" onclick="setCarFilter('完工待交車',this)" style="cursor:pointer" id="sf-ready"><div class="stat-n" style="color:#185FA5" id="s-ready">0</div><div class="stat-l">完工待交車</div></div>
-      <div class="stat" onclick="setCarFilter('待料',this)" style="cursor:pointer" id="sf-wait"><div class="stat-n" style="color:#b35a00" id="s-wait">0</div><div class="stat-l">待料</div></div>
+      <div class="stat active" id="sf-all" onclick="setCarFilter('全部',this)" style="cursor:pointer"><div class="stat-n" id="s-all">0</div><div class="stat-l">全部</div></div>
+      <div class="stat" id="sf-maint" onclick="setCarFilter('保養維修',this)" style="cursor:pointer"><div class="stat-n" style="color:#1a7a35" id="s-maint">0</div><div class="stat-l">保養維修</div></div>
+      <div class="stat" id="sf-ins" onclick="setCarFilter('出險鈑烤',this)" style="cursor:pointer"><div class="stat-n" style="color:#791F1F" id="s-ins">0</div><div class="stat-l">出險鈑烤</div></div>
+      <div class="stat" id="sf-ready" onclick="setCarFilter('完工待交',this)" style="cursor:pointer"><div class="stat-n" style="color:#0d5ea6" id="s-ready">0</div><div class="stat-l">完工待交</div></div>
     </div>
     <div class="srch"><span style="font-size:16px;color:var(--t3)">⌕</span><input id="srch-car" placeholder="搜尋車牌、客戶或工單…" oninput="renderCars()"></div>
     <div class="scroll" id="car-list"></div>
@@ -318,12 +321,50 @@ body{
     <div class="scroll" id="hist-list"></div>
   </div>
 
+  <!-- 設定 / 資料管理 -->
+  <div class="page" id="pg-setting">
+    <div class="nav"><h1>設定</h1><p>資料管理與搬移</p></div>
+    <div class="scroll">
+      <div style="padding-top:16px">
+        <div class="card" style="cursor:default;margin-bottom:16px">
+          <div style="font-size:15px;font-weight:600;color:var(--t1);margin-bottom:6px">📤 匯出資料</div>
+          <div style="font-size:13px;color:var(--t2);line-height:1.6;margin-bottom:12px">將所有資料（車輛、客戶、待辦、車歷）打包成一段文字，複製後可貼到新 App 匯入。</div>
+          <button onclick="exportData()" style="width:100%;padding:13px;border:none;border-radius:11px;background:var(--accent);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;touch-action:manipulation">匯出全部資料</button>
+          <div id="export-box" style="display:none;margin-top:12px">
+            <div style="font-size:12px;color:var(--t3);margin-bottom:6px">請長按下方文字全選後複製：</div>
+            <textarea id="export-text" readonly style="width:100%;height:120px;border:0.5px solid var(--cb);border-radius:9px;padding:10px;font-size:11px;color:var(--t2);background:var(--bg);font-family:monospace;resize:none;-webkit-appearance:none;outline:none" onclick="this.select()"></textarea>
+            <button onclick="copyExport()" id="copy-btn" style="width:100%;margin-top:8px;padding:11px;border:0.5px solid var(--accent);border-radius:11px;background:transparent;color:var(--accent);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;touch-action:manipulation">複製到剪貼簿</button>
+          </div>
+        </div>
+        <div class="card" style="cursor:default;margin-bottom:16px">
+          <div style="font-size:15px;font-weight:600;color:var(--t1);margin-bottom:6px">📥 匯入資料</div>
+          <div style="font-size:13px;color:var(--t2);line-height:1.6;margin-bottom:12px">將從舊 App 匯出的文字貼到下方，然後點匯入。<span style="color:#a32d2d;font-weight:500">匯入後會覆蓋目前的所有資料。</span></div>
+          <textarea id="import-text" placeholder="貼上從舊 App 複製的資料文字…" style="width:100%;height:120px;border:0.5px solid var(--cb);border-radius:9px;padding:10px;font-size:13px;color:var(--t1);background:var(--bg);font-family:inherit;resize:none;-webkit-appearance:none;outline:none;margin-bottom:10px"></textarea>
+          <button onclick="importData()" style="width:100%;padding:13px;border:none;border-radius:11px;background:#1a7a35;color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;touch-action:manipulation">匯入資料</button>
+          <div id="import-result" style="display:none;margin-top:10px;padding:10px 12px;border-radius:9px;font-size:13px;line-height:1.5"></div>
+        </div>
+        <div class="card" style="cursor:default">
+          <div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:8px">📋 搬移步驟說明</div>
+          <div style="font-size:13px;color:var(--t2);line-height:1.9">
+            1. 在<b>舊 App</b> 進入設定 → 點「匯出全部資料」<br>
+            2. 點「複製到剪貼簿」<br>
+            3. 在<b>新 App</b> 進入設定頁<br>
+            4. 長按輸入框 → 貼上<br>
+            5. 點「匯入資料」→ 確認<br>
+            6. 完成！
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Tab bar -->
   <div class="tabbar">
     <div class="tab on" id="tab-cars" onclick="goto('cars',this)"><div class="tab-ic">🚗</div><div class="tab-lb">車輛清單</div></div>
     <div class="tab" id="tab-todo" onclick="goto('todo',this)"><div class="tab-ic">✅</div><div class="tab-lb">待辦 <span class="bcnt" id="todo-cnt">0</span></div></div>
     <div class="tab" id="tab-client" onclick="goto('client',this)"><div class="tab-ic">📞</div><div class="tab-lb">客戶</div></div>
-    <div class="tab" id="tab-hist" onclick="goto('hist',this)"><div class="tab-ic">📋</div><div class="tab-lb">維修車歷</div></div>
+    <div class="tab" id="tab-hist" onclick="goto('hist',this)"><div class="tab-ic">📋</div><div class="tab-lb">車歷</div></div>
+    <div class="tab" id="tab-setting" onclick="goto('setting',this)"><div class="tab-ic">⚙️</div><div class="tab-lb">設定</div></div>
   </div>
 
   <!-- FAB — outside page flow, fixed position -->
@@ -378,13 +419,18 @@ body{
         <div class="r2">
           <div class="field"><label>工單號碼 <span class="ai-badge" id="b-wo" style="display:none">AI</span></label><input id="sr-wo" placeholder="自動產生"></div>
           <div class="field"><label>車型 <span class="ai-badge" id="b-model" style="display:none">AI</span></label><input id="sr-model" placeholder="—"></div>
+          <div class="field"><label>里程數（km）</label><input id="sr-mileage" placeholder="例：35000" type="number" inputmode="numeric" min="0" style="-webkit-appearance:none;appearance:none"></div>
         </div>
         <div class="r2">
           <div class="field"><label>預計交車日期</label><input id="sr-deldate" type="date"></div>
           <div class="field"><label>預計交車時間</label><input id="sr-time" type="time"></div>
         </div>
         <div class="field"><label>狀態</label><div class="chips" id="chips-scan"></div><div class="ci-row" id="ci-scan" style="display:none"><input id="sr-custom" placeholder="自訂狀態…"><button class="ci-btn" onclick="confirmScanCustom()">確認</button></div></div>
-        <div class="field"><label>備註 <span class="ai-badge" id="b-note" style="display:none">AI</span></label><input id="sr-note" placeholder="選填"></div>
+        <div class="field">
+          <label>事項 <span class="ai-badge" id="b-note" style="display:none">AI</span></label>
+          <div class="quick-tags" id="qtags-sr-note"></div>
+          <input id="sr-note" placeholder="點選快速項目或直接打字" oninput="refreshQtags('sr-note')" style="margin-top:6px">
+        </div>
         <div class="brow">
           <button class="bb bb-cancel" onclick="resetScan()">重新拍照</button>
           <button class="bb bb-save" onclick="saveScan()">確認儲存</button>
@@ -415,9 +461,14 @@ body{
       <div class="r2">
         <div class="field"><label>工單號碼</label><input id="m-wo" placeholder="WO-001"></div>
         <div class="field"><label>車型</label><input id="m-model" placeholder="Toyota Camry"></div>
+        <div class="field"><label>里程數（km）</label><input id="m-mileage" placeholder="例：35000" type="number" inputmode="numeric" min="0" style="-webkit-appearance:none;appearance:none"></div>
       </div>
       <div class="field"><label>狀態 *</label><div class="chips" id="chips-manual"></div><div class="ci-row" id="ci-manual" style="display:none"><input id="m-custom" placeholder="自訂狀態…"><button class="ci-btn" onclick="confirmManualCustom()">確認</button></div></div>
-      <div class="field"><label>備註</label><input id="m-note" placeholder="選填"></div>
+      <div class="field">
+        <label>事項</label>
+        <div class="quick-tags" id="qtags-m-note"></div>
+        <input id="m-note" placeholder="點選快速項目或直接打字" oninput="refreshQtags('m-note')" style="margin-top:6px">
+      </div>
       <div class="brow">
         <button class="bb bb-cancel" onclick="hov('ov-manual')">取消</button>
         <button class="bb bb-save" onclick="saveManual()">儲存新增</button>
@@ -455,18 +506,20 @@ body{
         <div class="field"><label>聯絡電話</label><input id="ed-phone"></div>
       </div>
       <div class="field"><label>車型</label><input id="ed-model"></div>
+      <div class="field"><label>里程數（km）</label><input id="ed-mileage" placeholder="例：35000" type="number" inputmode="numeric" min="0" style="-webkit-appearance:none;appearance:none"></div>
       <div class="field"><label>狀態</label><div class="chips" id="chips-edit"></div><div class="ci-row" id="ci-edit" style="display:none"><input id="ed-custom" placeholder="自訂狀態…"><button class="ci-btn" onclick="confirmEditCustom()">確認</button></div></div>
-      <div class="field"><label>備註</label><input id="ed-note"></div>
+      <div class="field">
+        <label>事項</label>
+        <div class="quick-tags" id="qtags-ed-note"></div>
+        <input id="ed-note" placeholder="點選快速項目或直接打字" oninput="refreshQtags('ed-note')" style="margin-top:6px">
+      </div>
       <div class="brow" style="margin-bottom:8px">
         <button class="bb bb-cancel" onclick="hov('ov-edit')">關閉</button>
         <button class="bb bb-save" onclick="saveEdit()">儲存修改</button>
       </div>
-      <div class="brow" style="margin-bottom:8px">
-        <button class="bb bb-red" onclick="showCf('cancel')">取消此車輛</button>
-        <button class="bb" style="background:#185FA5;border:none;color:#fff" onclick="showCf('ready')">完工待交車</button>
-      </div>
       <div class="brow">
-        <button class="bb bb-dark" onclick="showCf('done')">已交車</button>
+        <button class="bb bb-red" onclick="showCf('cancel')">取消此車輛</button>
+        <button class="bb bb-dark" onclick="showCf('done')">已完成交車</button>
       </div>
     </div>
   </div>
@@ -591,14 +644,42 @@ var SS={
   '追加':{bg:'#fce8e8',c:'#791F1F',p:40,b:'#E24B4A'},
   '其他':{bg:'#F1EFE8',c:'#444441',p:15,b:'#888'},
   '維修中':{bg:'#e3f9ea',c:'#1a7a35',p:55,b:'#4cd964'},
-  '完工待交車':{bg:'#e3f2fd',c:'#0d5ea6',p:95,b:'#185FA5'},
   '完工待領':{bg:'#e3f2fd',c:'#0d5ea6',p:100,b:'#5ac8fa'},
   '已離場':{bg:'#fce8e8',c:'#a32d2d',p:10,b:'#E24B4A'},
   'QC':{bg:'#e3f9ea',c:'#1a7a35',p:80,b:'#4cd964'}
 };
 function gSt(s){return SS[s]||{bg:'#F1EFE8',c:'#444441',p:20,b:'#888'};}
 function bSt(s){var st=gSt(s);return 'background:'+st.bg+';color:'+st.c;}
-var PRESETS=['保養','待料','回電','保固','追加','其他'];
+var PRESETS=['保養','維修','保固','出險','鈑烤','其他'];
+var QUICK_ITEMS=['A保養','B保養','剎車油','冷氣濾網(外)','冷氣濾網(內)','尿素','積碳清洗劑','冷氣殺菌','雨刷精','雨刷','火星塞','空氣芯','變速箱油'];
+
+function refreshQtags(inputId){
+  var el=document.getElementById(inputId);if(!el)return;
+  var parts=el.value?el.value.split('、').map(function(s){return s.trim();}):[];
+  var c=document.getElementById('qtags-'+inputId);if(!c)return;
+  c.querySelectorAll('.qtag').forEach(function(b){
+    var sel=parts.indexOf(b.getAttribute('data-tag'))>=0;
+    b.style.background=sel?'var(--accent)':'var(--bg)';
+    b.style.color=sel?'#fff':'var(--t2)';
+    b.style.borderColor=sel?'var(--accent)':'var(--cb)';
+  });
+}
+function buildQtags(inputId){
+  var c=document.getElementById('qtags-'+inputId);if(!c)return;
+  c.innerHTML=QUICK_ITEMS.map(function(t){
+    return '<div class="qtag" data-tag="'+t+'" data-input="'+inputId+'" onclick="toggleQtag(this)">'+t+'</div>';
+  }).join('');
+}
+function toggleQtag(el){
+  var tag=el.getAttribute('data-tag');
+  var inputId=el.getAttribute('data-input');
+  var inp=document.getElementById(inputId);if(!inp)return;
+  var parts=inp.value?inp.value.split('、').map(function(s){return s.trim();}).filter(Boolean):[];
+  var idx=parts.indexOf(tag);
+  if(idx>=0)parts.splice(idx,1);else parts.push(tag);
+  inp.value=parts.join('、');
+  refreshQtags(inputId);
+}
 var TODO_TYPES=['待料','回電','保固','追加','已離場','QC','其他'];
 
 // ── App State ──
@@ -608,7 +689,6 @@ var urgOn=false,editId=null,cfAction=null;
 var pForceManual=false,pForceScan=false,noticeEditOn=false;
 var photoCarId=null,photoHistId=null,lbCtx=null,lbRef=null;
 var editingClientPlate=null,hdId=null,todoFilter='全部';
-var carFilter='全部';
 var nid=10;
 
 // ── LocalStorage ──
@@ -689,6 +769,7 @@ function openScan(){
   document.getElementById('scan-img').style.display='none';
   document.getElementById('ai-st').style.display='none';
   document.getElementById('scan-dup').style.display='none';
+  buildQtags('sr-note');refreshQtags('sr-note');
   pForceScan=false;
   sov('ov-scan');
 }
@@ -697,6 +778,7 @@ function resetScan(){
   document.getElementById('scan-img').style.display='none';
   document.getElementById('scan-ph').style.display='block';
   document.getElementById('ai-st').style.display='none';
+  buildQtags('sr-note');refreshQtags('sr-note');
   pForceScan=false;
 }
 function hideScanDup(){document.getElementById('scan-dup').style.display='none';pForceScan=false;}
@@ -783,6 +865,7 @@ function saveScan(){
     deldate:document.getElementById('sr-deldate').value,
     time:document.getElementById('sr-time').value,
     model:document.getElementById('sr-model').value.trim(),
+    mileage:(document.getElementById('sr-mileage')?document.getElementById('sr-mileage').value.trim():''),
     status:status||'保養',
     note:document.getElementById('sr-note').value.trim(),photos:[]});
   upsertClient(plate,name,phone);saveCars();hov('ov-scan');renderCars();
@@ -793,7 +876,8 @@ function forceScan(){pForceScan=true;document.getElementById('scan-dup').style.d
 function openManual(){
   hov('ov-choice');manualSt='保養';pForceManual=false;
   buildChips('chips-manual',manualSt,function(v){manualSt=v;},'ci-manual');
-  ['m-plate','m-name','m-phone','m-wo','m-model','m-custom','m-note'].forEach(function(id){document.getElementById(id).value='';});
+  ['m-plate','m-name','m-phone','m-wo','m-model','m-custom','m-note','m-mileage'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  buildQtags('m-note');refreshQtags('m-note');
   document.getElementById('m-date').value=todayStr();
   document.getElementById('m-deldate').value=todayStr();
   document.getElementById('m-time').value='';
@@ -836,6 +920,7 @@ function saveManual(){
     deldate:document.getElementById('m-deldate').value,
     time:document.getElementById('m-time').value,
     model:document.getElementById('m-model').value.trim(),
+    mileage:(document.getElementById('m-mileage')?document.getElementById('m-mileage').value.trim():''),
     status:status,note:document.getElementById('m-note').value.trim(),photos:[]});
   upsertClient(plate,name,phone);saveCars();hov('ov-manual');renderCars();
 }
@@ -854,7 +939,9 @@ function openEdit(id){
   document.getElementById('ed-name').value=c.name||'';
   document.getElementById('ed-phone').value=c.phone||'';
   document.getElementById('ed-model').value=c.model||'';
+  var emLoad=document.getElementById('ed-mileage');if(emLoad)emLoad.value=c.mileage||'';
   document.getElementById('ed-note').value=c.note||'';
+  buildQtags('ed-note');refreshQtags('ed-note');
   document.getElementById('ed-custom').value='';
   buildChips('chips-edit',editSt,function(v){editSt=v;},'ci-edit');
   var cl=getClient(c.plate);
@@ -896,6 +983,7 @@ function saveEdit(){
   c.name=document.getElementById('ed-name').value.trim()||c.name;
   c.phone=document.getElementById('ed-phone').value.trim();
   c.model=document.getElementById('ed-model').value.trim();
+  var emEl=document.getElementById('ed-mileage');c.mileage=emEl?emEl.value.trim():'';
   c.note=document.getElementById('ed-note').value.trim();
   c.status=status;
   upsertClient(c.plate,c.name,c.phone);saveCars();hov('ov-edit');renderCars();
@@ -903,15 +991,10 @@ function saveEdit(){
 function showCf(action){
   var c=cars.find(function(x){return x.id===editId;});if(!c)return;cfAction=action;
   if(action==='done'){
-    document.getElementById('cf-title').textContent='確認已交車？';
+    document.getElementById('cf-title').textContent='確認已完成交車？';
     document.getElementById('cf-desc').textContent='車輛 '+c.plate+'（'+c.name+'）將從廠內車輛移除，儲存至維修車歷，照片一併保留。';
     document.getElementById('cf-warn').style.display='none';
-    document.getElementById('cf-btn').textContent='確認已交車';document.getElementById('cf-btn').className='bb bb-done';
-  }else if(action==='ready'){
-    document.getElementById('cf-title').textContent='標記為完工待交車？';
-    document.getElementById('cf-desc').textContent='車輛 '+c.plate+'（'+c.name+'）狀態將更新為「完工待交車」，繼續保留在車輛清單中。';
-    document.getElementById('cf-warn').style.display='none';
-    document.getElementById('cf-btn').textContent='確認完工待交車';document.getElementById('cf-btn').className='bb bb-save';
+    document.getElementById('cf-btn').textContent='確認完成';document.getElementById('cf-btn').className='bb bb-done';
   }else{
     document.getElementById('cf-title').textContent='確認取消此車輛？';
     document.getElementById('cf-desc').textContent='車輛 '+c.plate+'（'+c.name+'）將直接從清單移除。';
@@ -923,11 +1006,6 @@ function showCf(action){
 }
 function doCf(){
   var c=cars.find(function(x){return x.id===editId;});if(!c)return;
-  if(cfAction==='ready'){
-    // 完工待交車：只更新狀態，留在清單
-    c.status='完工待交車';
-    saveCars();hov('ov-cf');hov('ov-edit');renderCars();return;
-  }
   if(cfAction==='done'){
     var k=normPlate(c.plate);
     if(!clients[k])clients[k]={plate:k,name:c.name,phone:c.phone,notice:'',memo:''};
@@ -1001,48 +1079,55 @@ function openLb(ctx,id,idx){
 function closeLb(){document.getElementById('lightbox').style.display='none';lbCtx=null;lbRef=null;}
 function delFromLb(){if(!lbRef)return;delPhoto(lbCtx,lbRef.id,lbRef.idx);closeLb();}
 
-// ── 車輛清單篩選 ──
+// ── 渲染車輛清單 ──
+// 保養維修群組
+var GROUP_MAINT=['保養','維修'];
+// 出險鈑烤群組
+var GROUP_INS=['出險','鈑烤'];
+// 完工待交群組
+var GROUP_READY=['完工待交車','完工待領'];
+// 目前篩選
+var carFilter='全部';
+
 function setCarFilter(f,el){
   carFilter=f;
-  // update stat highlight
-  ['sf-all','sf-rep','sf-ready','sf-wait'].forEach(function(id){
+  ['sf-all','sf-maint','sf-ins','sf-ready'].forEach(function(id){
     var s=document.getElementById(id);if(s)s.classList.remove('active');
   });
   if(el)el.classList.add('active');
   renderCars();
 }
 
-// ── 渲染車輛清單 ──
-function carSortKey(c){
-  // 完工待交車排最後（前綴 '9'），其他按交車日期時間
-  var prefix=c.status==='完工待交車'?'9':'0';
-  if(!c.deldate)return prefix+'9999-99-99 99:99';
-  return prefix+c.deldate+' '+(c.time||'23:59');
-}
 function renderCars(){
   var q=document.getElementById('srch-car').value.toLowerCase().replace(/-/g,'');
-  var all=cars.filter(function(c){
+  var allMatch=cars.filter(function(c){
     return c.plate.replace(/-/g,'').toLowerCase().indexOf(q)>=0||
            c.name.indexOf(q)>=0||c.wo.toLowerCase().indexOf(q)>=0;
   });
-  // 更新數字
-  document.getElementById('s-all').textContent=cars.length;
-  var rep=0,ready=0,wait=0;
+  // 計算各分類數量
+  var maint=0,ins=0,ready=0;
   cars.forEach(function(c){
-    if(c.status==='維修中')rep++;
-    if(c.status==='完工待交車')ready++;
-    if(c.status==='待料')wait++;
+    if(GROUP_MAINT.indexOf(c.status)>=0)maint++;
+    if(GROUP_INS.indexOf(c.status)>=0)ins++;
+    if(GROUP_READY.indexOf(c.status)>=0)ready++;
   });
-  document.getElementById('s-rep').textContent=rep;
+  document.getElementById('s-all').textContent=cars.length;
+  document.getElementById('s-maint').textContent=maint;
+  document.getElementById('s-ins').textContent=ins;
   document.getElementById('s-ready').textContent=ready;
-  document.getElementById('s-wait').textContent=wait;
   // 套用篩選
-  var filtered=all;
-  if(carFilter==='維修中')filtered=all.filter(function(c){return c.status==='維修中';});
-  else if(carFilter==='完工待交車')filtered=all.filter(function(c){return c.status==='完工待交車';});
-  else if(carFilter==='待料')filtered=all.filter(function(c){return c.status==='待料';});
-  // 排序：完工待交車往後，其餘按交車時間
-  filtered.sort(function(a,b){return carSortKey(a).localeCompare(carSortKey(b));});
+  var filtered=allMatch;
+  if(carFilter==='保養維修')filtered=allMatch.filter(function(c){return GROUP_MAINT.indexOf(c.status)>=0;});
+  else if(carFilter==='出險鈑烤')filtered=allMatch.filter(function(c){return GROUP_INS.indexOf(c.status)>=0;});
+  else if(carFilter==='完工待交')filtered=allMatch.filter(function(c){return GROUP_READY.indexOf(c.status)>=0;});
+  // 排序：完工待交排最後，其他按交車日期
+  filtered.sort(function(a,b){
+    var ar=GROUP_READY.indexOf(a.status)>=0?'9':'0';
+    var br=GROUP_READY.indexOf(b.status)>=0?'9':'0';
+    var ak=ar+(a.deldate||'9999-99-99')+' '+(a.time||'23:59');
+    var bk=br+(b.deldate||'9999-99-99')+' '+(b.time||'23:59');
+    return ak.localeCompare(bk);
+  });
   var list=document.getElementById('car-list');
   if(!filtered.length){list.innerHTML='<div class="empty">尚無車輛紀錄<br>點右下角 ＋ 新增</div>';return;}
   var html='';
@@ -1057,6 +1142,7 @@ function renderCars(){
     html+='<div class="fl"><span class="lbl">車型</span><span class="val">'+(c.model||'—')+'</span></div>';
     html+='<div class="fl"><span class="lbl">進廠日期</span><span class="val">'+(c.indate?fmtDate(c.indate):'—')+'</span></div>';
     html+='<div class="fl"><span class="lbl">預計交車</span><span class="val">'+(c.deldate?fmtDate(c.deldate):'—')+(c.time?' '+c.time:'')+'</span></div>';
+    if(c.mileage)html+='<div class="fl"><span class="lbl">里程數</span><span class="val">'+Number(c.mileage).toLocaleString()+' km</span></div>';
     html+='</div>';
     if(c.note)html+='<div class="note-row">備註：'+c.note+'</div>';
     if(cl&&cl.notice)html+='<div class="notice-bar"><span>⚠ '+cl.notice+'</span></div>';
@@ -1256,9 +1342,58 @@ function openHistDetail(id){
     '<div class="fl"><span class="lbl">聯絡電話</span><span class="val">'+(h.phone||'—')+'</span></div>'+
     '<div class="fl"><span class="lbl">工單號碼</span><span class="val">'+(h.wo||'—')+'</span></div>'+
     '<div class="fl"><span class="lbl">車型</span><span class="val">'+(h.model||'—')+'</span></div>'+
+    '<div class="fl"><span class="lbl">里程數</span><span class="val">'+(h.mileage?Number(h.mileage).toLocaleString()+' km':'—')+'</span></div>'+
     '<div class="fl"><span class="lbl">進廠日期</span><span class="val">'+(h.indate?fmtDate(h.indate):'—')+'</span></div>'+
     '<div class="fl"><span class="lbl">交車日期</span><span class="val">'+(h.deldate?fmtDate(h.deldate):'—')+(h.time?' '+h.time:'')+'</span></div>';
   renderHistPhotos();sov('ov-hist');
+}
+
+// ── 匯出／匯入 ──
+function exportData(){
+  var data={cars:cars,todos:todos,clients:clients,hist:histList,exportedAt:nowStr(),version:1};
+  var json=JSON.stringify(data);
+  document.getElementById('export-box').style.display='block';
+  document.getElementById('export-text').value=json;
+  document.getElementById('export-text').select();
+  try{navigator.clipboard.writeText(json).then(function(){
+    document.getElementById('copy-btn').textContent='✅ 已複製！';
+    setTimeout(function(){document.getElementById('copy-btn').textContent='複製到剪貼簿';},3000);
+  }).catch(function(){});}catch(e){}
+}
+function copyExport(){
+  var json=document.getElementById('export-text').value;if(!json)return;
+  var btn=document.getElementById('copy-btn');
+  var done=function(){btn.textContent='✅ 已複製！';setTimeout(function(){btn.textContent='複製到剪貼簿';},3000);};
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(json).then(done).catch(function(){document.getElementById('export-text').select();document.execCommand('copy');done();});
+  }else{document.getElementById('export-text').select();document.execCommand('copy');done();}
+}
+function importData(){
+  var raw=document.getElementById('import-text').value.trim();
+  var result=document.getElementById('import-result');
+  if(!raw){result.style.display='block';result.style.background='#fce8e8';result.style.color='#791F1F';result.textContent='⚠️ 請先貼上資料文字。';return;}
+  try{
+    var data=JSON.parse(raw);
+    if(!data.cars&&!data.todos&&!data.clients&&!data.hist){throw new Error('格式不符');}
+    var msg='即將匯入：\n車輛清單 '+(data.cars?data.cars.length:0)+' 筆\n客戶資料 '+(data.clients?Object.keys(data.clients).length:0)+' 筆\n待辦事項 '+(data.todos?data.todos.length:0)+' 筆\n維修車歷 '+(data.hist?data.hist.length:0)+' 筆\n\n匯入後會覆蓋目前所有資料，確定繼續？';
+    if(!confirm(msg))return;
+    if(data.cars){cars=data.cars;saveCars();}
+    if(data.todos){todos=data.todos;saveTodos();}
+    if(data.clients){clients=data.clients;saveClients();}
+    if(data.hist){histList=data.hist;saveHist();}
+    var maxId=0;
+    (cars||[]).forEach(function(c){if(c.id>maxId)maxId=c.id;});
+    (todos||[]).forEach(function(t){if(t.id>maxId)maxId=t.id;});
+    (histList||[]).forEach(function(h){if(h.id>maxId)maxId=h.id;});
+    nid=maxId+1;
+    result.style.display='block';result.style.background='#e3f9ea';result.style.color='#1a7a35';
+    result.textContent='✅ 匯入成功！車輛 '+(data.cars?data.cars.length:0)+' 筆、客戶 '+(data.clients?Object.keys(data.clients).length:0)+' 筆、待辦 '+(data.todos?data.todos.length:0)+' 筆、車歷 '+(data.hist?data.hist.length:0)+' 筆。';
+    document.getElementById('import-text').value='';
+    renderCars();renderTodos();renderClients();renderHist();
+  }catch(e){
+    result.style.display='block';result.style.background='#fce8e8';result.style.color='#791F1F';
+    result.textContent='❌ 資料格式錯誤，請確認是從車廠服務 App 匯出的文字。';
+  }
 }
 
 // ── Service Worker ──
@@ -1267,7 +1402,6 @@ if('serviceWorker' in navigator){
 }
 
 // ── Init ──
-document.getElementById('sf-all').classList.add('active');
 renderCars();renderTodos();
 </script>
 </body>
